@@ -18,6 +18,19 @@ A no-ads, mobile-friendly Sudoku web app. Three difficulties, optional hard mode
 - "Buy me a Diet Pepsi" donation links (PayPal + Venmo)
 - Mobile-friendly responsive layout, no framework — easy to wrap with Capacitor or a WKWebView for native apps
 
+## Build versioning
+
+The page displays a build stamp (version + timestamp) in the footer for debugging/testing. It's stored in `version.json`:
+
+```json
+{
+  "version": "1.0.0",
+  "buildTime": "2026-04-26T15:30:00Z"
+}
+```
+
+Update this file before each release or configure your CI/CD to generate it with the commit hash and current timestamp.
+
 ## Run locally
 
 It's a static site. Any local server works:

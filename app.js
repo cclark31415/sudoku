@@ -636,6 +636,19 @@ function init() {
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   els.themeBtn.textContent = isDark ? "☀️" : "🌙";
 
+  // Load and display build stamp
+  fetch("/version.json")
+    .then(r => r.json())
+    .then(v => {
+      const stamp = document.getElementById("buildStamp");
+      const dt = new Date(v.buildTime);
+      const timeStr = dt.toLocaleString("en-US", {
+        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short"
+      });
+      stamp.textContent = `v${v.version} · ${timeStr}`;
+    })
+    .catch(() => {});
+
   // Restore user from localStorage
   const saved = localStorage.getItem("sudoku_user");
   if (saved) {

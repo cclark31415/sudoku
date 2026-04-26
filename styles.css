@@ -248,6 +248,7 @@ html, body {
 .legal-links { display: flex; gap: 16px; justify-content: center; font-size: 0.9rem; }
 .legal-links a { color: var(--text); text-decoration: none; }
 .legal-links a:hover { color: var(--accent); }
+.build-stamp { font-size: 0.75rem; color: var(--muted); margin-top: 12px; font-family: monospace; opacity: 0.6; }
 
 /* Flash animation for completed row/col/box */
 @keyframes flashCycle {
