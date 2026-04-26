@@ -1,5 +1,4 @@
-const SIZE = 9;
-const BOX = 3;
+// SIZE and BOX are defined in sudoku.js
 
 // Replace with your Google OAuth 2.0 client ID to enable Google Sign-In.
 // Without it, sign-in falls back to a local profile prompt.
@@ -45,6 +44,7 @@ const els = {
   scoreList: document.getElementById("scoreList"),
   scoreHeading: document.getElementById("scoreHeading"),
   scoreNote: document.getElementById("scoreNote"),
+  themeBtn: document.getElementById("themeBtn"),
 };
 
 // ----- Board rendering -----
@@ -601,6 +601,24 @@ function init() {
   });
 
   els.signInBtn.addEventListener("click", handleSignIn);
+
+  els.themeBtn.addEventListener("click", () => {
+    const root = document.documentElement;
+    const isDark = root.getAttribute("data-theme") === "dark";
+    if (isDark) {
+      root.removeAttribute("data-theme");
+      localStorage.setItem("theme", "light");
+      els.themeBtn.textContent = "🌙";
+    } else {
+      root.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+      els.themeBtn.textContent = "☀️";
+    }
+  });
+
+  // Update theme button icon on load
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  els.themeBtn.textContent = isDark ? "☀️" : "🌙";
 
   // Restore user from localStorage
   const saved = localStorage.getItem("sudoku_user");

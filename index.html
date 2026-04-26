@@ -3,14 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#bcdcff" />
+  <meta name="theme-color" content="#bcdcff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a1f3d" media="(prefers-color-scheme: dark)" />
   <title>Sudoku</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("theme");
+        var dark = saved === "dark" || (!saved && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.setAttribute("data-theme", "dark");
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar">
     <h1>Sudoku</h1>
     <div class="user-area">
+      <button id="themeBtn" class="btn ghost" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
       <button id="signInBtn" class="btn ghost">Sign in</button>
       <span id="userInfo" class="user-info" hidden></span>
     </div>
