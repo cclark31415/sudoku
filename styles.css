@@ -104,14 +104,16 @@ html, body {
   font-size: 0.95rem;
   cursor: pointer;
   color: var(--text);
+  font-weight: 500;
   transition: background 0.15s, transform 0.05s;
 }
-.btn:hover { background: #f0f6ff; }
+.btn:hover { background: #f0f6ff; border-color: #8fbff5; }
 .btn:active { transform: translateY(1px); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
 .btn.primary:hover { background: var(--accent-dark); }
-.btn.ghost { background: transparent; }
-.btn.toggle-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.btn.ghost { background: transparent; color: var(--text); }
+.btn.ghost:hover { background: rgba(31, 111, 235, 0.1); }
+.btn.toggle-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .status { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -156,7 +158,7 @@ html, body {
 .cell.error { color: var(--error); background: var(--error-bg); }
 .cell.peer { background: var(--tile-peer); }
 .cell.same-num { background: var(--tile-same); }
-.cell.selected { background: var(--tile-selected); }
+.cell.selected { background: var(--tile-selected); border: 3px solid var(--accent); }
 
 /* Thicker borders for 3x3 boxes */
 .cell[data-col="2"], .cell[data-col="5"] { box-shadow: inset -2px 0 0 var(--grid-thick); }

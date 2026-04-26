@@ -212,12 +212,27 @@ function applyNumber(r, c, num) {
 
   if (state.notesMode) {
     if (state.board[r][c] !== 0) return; // can't add notes to filled cell
+    // Count how many of this number are already placed
+    let count = 0;
+    for (let rr = 0; rr < SIZE; rr++)
+      for (let cc = 0; cc < SIZE; cc++)
+        if (state.board[rr][cc] === num) count++;
+    // Can't add note if number is exhausted (9 already placed)
+    if (count >= 9) return;
     if (state.notes[r][c].has(num)) state.notes[r][c].delete(num);
     else state.notes[r][c].add(num);
     renderCell(r, c);
     refreshHighlights();
     return;
   }
+
+  // Count how many of this number are already placed (before placing)
+  let numCount = 0;
+  for (let rr = 0; rr < SIZE; rr++)
+    for (let cc = 0; cc < SIZE; cc++)
+      if (state.board[rr][cc] === num) numCount++;
+  // Can't place number if already exhausted (9 already placed)
+  if (numCount >= 9) return;
 
   state.board[r][c] = num;
   state.notes[r][c].clear();
@@ -228,15 +243,16 @@ function applyNumber(r, c, num) {
       state.errors[r][c] = true;
       state.mistakes++;
       els.mistakes.textContent = state.mistakes;
-    } else {
-      removeNotePeers(r, c, num);
-      checkCompletions(r, c);
     }
-  } else {
-    removeNotePeers(r, c, num);
   }
 
+  removeNotePeers(r, c, num);
   renderCell(r, c);
+
+  if (!state.hardMode && num === state.solution[r][c]) {
+    checkCompletions(r, c);
+  }
+
   refreshHighlights();
   updateNumpad();
 
@@ -554,6 +570,8 @@ function init() {
     state.notesMode = !state.notesMode;
     els.notesBtn.textContent = `Notes: ${state.notesMode ? "on" : "off"}`;
     els.notesBtn.classList.toggle("active", state.notesMode);
+    state.selected = null;
+    refreshHighlights();
   });
   els.hintBtn.addEventListener("click", useHint);
   els.eraseBtn.addEventListener("click", eraseSelected);
@@ -567,11 +585,9 @@ function init() {
     btn.addEventListener("click", () => {
       const n = +btn.dataset.num;
       state.selectedNumber = state.selectedNumber === n ? 0 : n;
+      state.selected = null;
       updateNumpad();
-      if (state.selectedNumber !== 0 && state.selected) {
-        const { row, col } = state.selected;
-        if (!state.givens[row][col]) applyNumber(row, col, state.selectedNumber);
-      }
+      refreshHighlights();
     });
   }
 
