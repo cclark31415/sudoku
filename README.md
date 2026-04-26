@@ -33,29 +33,33 @@ Update this file before each release or configure your CI/CD to generate it with
 
 ## Run locally
 
-It's a static site. Any local server works:
+It's a static site. Any local server works from the `www` directory:
 
 ```bash
 # Python
-python3 -m http.server 8080
+python3 -m http.server 8080 --directory www
 
 # Node
-npx serve .
+npx serve www
 ```
 
 Then open http://localhost:8080.
 
 ## Project layout
 
+All web-related assets are stored in the `www/` directory. This structure was adopted to support a "single-repo" strategy for both the web app and future native mobile apps (using Capacitor). The root of the repository is reserved for native project folders (`android/`, `ios/`) and configuration files.
+
 ```
 .
-├── index.html                   # markup
-├── styles.css                   # styles + animations
-├── sudoku.js                    # puzzle generation/solving
-├── app.js                       # game state, UI, scoring, auth
-├── staticwebapp.config.json     # Azure SWA routing/headers
+├── www/                         # All web assets
+│   ├── index.html               # markup
+│   ├── styles.css               # styles + animations
+│   ├── sudoku.js                # puzzle generation/solving
+│   ├── app.js                   # game state, UI, scoring, auth
+│   └── staticwebapp.config.json # Azure SWA routing/headers
 ├── .github/workflows/
 │   └── azure-static-web-apps.yml
+├── design.md                    # Planning and migration notes
 └── README.md
 ```
 
@@ -71,11 +75,14 @@ If `GOOGLE_CLIENT_ID` is empty the Sign-in button falls back to a local-only pro
 
 ## Configure donation links
 
-Open `index.html` and replace the placeholder URLs in the footer:
+The donation links in the footer of `index.html` are currently set to:
+
+- **PayPal:** `paypal@chrisclark.net` (Personal account link)
+- **Venmo:** `@Christopher-Clark-1140`
 
 ```html
-<a id="paypalBtn" href="https://paypal.me/yourhandle">…</a>
-<a id="venmoBtn"  href="https://venmo.com/yourhandle">…</a>
+<a id="paypalBtn" href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=paypal@chrisclark.net&...">…</a>
+<a id="venmoBtn"  href="https://venmo.com/Christopher-Clark-1140">…</a>
 ```
 
 ## Deploy to Azure Static Web Apps
@@ -87,7 +94,7 @@ The repo deploys via the GitHub Actions workflow in `.github/workflows/azure-sta
 1. In the Azure portal, create a **Static Web App** resource (Free tier is fine).
 2. Choose **GitHub** as the source. Pick this repo and the `main` branch.
 3. For build details select **Custom** with:
-   - **App location:** `/`
+   - **App location:** `/www`
    - **Api location:** *(leave empty)*
    - **Output location:** *(leave empty)*
 4. Azure will commit a workflow file. Replace it with the one already in this repo (or let Azure overwrite — the contents are equivalent).
@@ -112,7 +119,7 @@ The workflow opens a staging environment for every PR (`build_and_deploy` runs o
 
 ## Mobile
 
-The layout is responsive and the board uses `aspect-ratio: 1 / 1`, so it scales cleanly down to phones. To ship as a native app, wrap the static files with [Capacitor](https://capacitorjs.com/) — `npx cap add ios && npx cap add android`, copy the static files into `www/`, and you have iOS/Android shells with no code changes.
+The layout is responsive and the board uses `aspect-ratio: 1 / 1`, so it scales cleanly down to phones. To ship as a native app, we use [Capacitor](https://capacitorjs.com/). The project is structured with a `www/` directory to make it easy for Capacitor to wrap the web assets into native iOS/Android projects while keeping the native code separate from the web logic.
 
 ## Scoring
 

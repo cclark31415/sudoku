@@ -63,3 +63,9 @@ A middle ground for getting a PWA into the Google Play Store using tools like **
 2. **Back Button Handling:** Map the Android physical back button to close modals or menus using Capacitor's `backbutton` listener or the History API.
 3. **Data Persistence:** While `localStorage` works, Capacitor's `Preferences` plugin is more resilient to OS-level cache clearing.
 4. **Haptics:** Add tactile feedback (vibration) on mistakes or completions using the Capacitor Haptics plugin to improve the "native" feel.
+
+---
+
+### Infrastructure Updates
+- **2026-04-26:** Prepared project for Capacitor by moving all web assets into a `/www` directory and updating the Azure Static Web Apps workflow (`app_location: "/www"`). This allows native mobile code (Android/iOS) to live in the root directory without interfering with the web deployment.
+
