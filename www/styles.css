@@ -268,6 +268,7 @@ html, body {
 .build-stamp { font-size: 0.75rem; color: var(--muted); margin-top: 12px; font-family: monospace; opacity: 0.6; }
 
 /* Stats modal */
+.stats-modal[hidden] { display: none; }
 .stats-modal {
   position: fixed;
   inset: 0;
