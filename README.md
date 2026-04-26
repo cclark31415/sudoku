@@ -88,12 +88,12 @@ The repo deploys via the GitHub Actions workflow in `.github/workflows/azure-sta
 
 ### Custom domain: sudoku.chrisclark.net
 
-1. In the Static Web App resource: **Settings → Custom domains → Add → Custom domain on other DNS**.
-2. Enter `sudoku.chrisclark.net`. Azure shows a **CNAME** target (looks like `nice-name-1234.azurestaticapps.net`) and a **TXT validation** record.
-3. In your `chrisclark.net` DNS provider, add:
-   - **CNAME** `sudoku` → the Azure-supplied target
-   - **TXT** record per the validation instructions (only required for the apex; subdomains can usually skip via the CNAME-only flow)
-4. Click **Validate** in the portal. Once validated, Azure issues a managed TLS certificate automatically.
+1. In the Static Web App resource: **Settings → Custom domains → Add**.
+2. Enter `sudoku.chrisclark.net`. Azure will guide you through validation based on where your domain is hosted.
+3. Since `chrisclark.net` is in Azure (DNS or App Service):
+   - If in **Azure DNS**, create a CNAME record: `sudoku` → the Azure-supplied target (e.g., `gentle-pond-xxx.azurestaticapps.net`)
+   - If in **App Service custom domains**, follow the Azure portal's validation steps
+4. Click **Validate**. Azure automatically issues a managed TLS certificate.
 
 ### Pull request previews
 
