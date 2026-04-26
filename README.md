@@ -59,13 +59,11 @@ Then open http://localhost:8080.
 └── README.md
 ```
 
-## Configure Google Sign-In
+## Google Sign-In
 
-1. Create an OAuth 2.0 Web client ID in Google Cloud Console.
-2. Add authorized JavaScript origins:
-   - `https://sudoku.chrisclark.net`
-   - `http://localhost:8080` (or your dev origin)
-3. Open `app.js` and set `GOOGLE_CLIENT_ID` to your client ID.
+Google OAuth 2.0 is configured for `sudoku.chrisclark.net`. The Client ID is in `app.js` (`GOOGLE_CLIENT_ID`).
+
+If the OAuth consent screen is still in **Testing** mode in Google Cloud Console, only added test users can sign in. To allow any Google user, publish the consent screen.
 
 If `GOOGLE_CLIENT_ID` is empty the Sign-in button falls back to a local-only profile prompt — useful for development.
 

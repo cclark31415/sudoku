@@ -1,8 +1,7 @@
 // SIZE and BOX are defined in sudoku.js
 
-// Replace with your Google OAuth 2.0 client ID to enable Google Sign-In.
-// Without it, sign-in falls back to a local profile prompt.
-const GOOGLE_CLIENT_ID = "";
+// Google OAuth 2.0 client ID for sudoku.chrisclark.net
+const GOOGLE_CLIENT_ID = "871360095724-0pavif4b533o6jgqjk5gu8sppv0gogmn.apps.googleusercontent.com";
 
 const state = {
   puzzle: null,        // initial board (zeros for blanks)
