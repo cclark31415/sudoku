@@ -110,6 +110,18 @@ function refreshHighlights() {
       el.classList.remove("selected", "peer", "same-num");
     }
   }
+
+  // Highlight all tiles with the selected number from numpad
+  if (state.selectedNumber !== 0) {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (state.board[r][c] === state.selectedNumber) {
+          cellEl(r, c).classList.add("same-num");
+        }
+      }
+    }
+  }
+
   if (!state.selected) return;
   const { row, col } = state.selected;
   const selVal = state.board[row][col];
