@@ -117,13 +117,13 @@ html, body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 :root[data-theme="dark"] .btn {
-  border-color: #1a3a5c;
-  background: #1a3a5c;
+  border-color: #2c5a8c;
+  background: #0f2744;
   color: #e0e9ff;
 }
-:root[data-theme="dark"] .btn:hover { background: #2c5a8c; border-color: #3b7fab; }
-:root[data-theme="dark"] .btn.ghost { background: transparent; color: #e0e9ff; }
-:root[data-theme="dark"] .btn.ghost:hover { background: rgba(96, 165, 250, 0.15); }
+:root[data-theme="dark"] .btn:hover { background: #1a3a5c; border-color: #3b7fab; }
+:root[data-theme="dark"] .btn.ghost { background: transparent; color: #e0e9ff; border-color: #2c5a8c; }
+:root[data-theme="dark"] .btn.ghost:hover { background: rgba(96, 165, 250, 0.15); border-color: #3b7fab; }
 
 .status { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .status-item { display: flex; flex-direction: column; }
