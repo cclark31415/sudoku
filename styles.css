@@ -224,14 +224,22 @@ html, body {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255,255,255,0.95);
+  background: white;
+  color: #1b2733;
+  border: 2px solid var(--accent);
   padding: 18px 24px;
   border-radius: 12px;
   box-shadow: var(--shadow);
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
   pointer-events: none;
   z-index: 10;
+}
+
+:root[data-theme="dark"] .message {
+  background: #0f2744;
+  color: #e0e9ff;
+  border-color: #3b7fab;
 }
 
 .footer {
@@ -259,13 +267,21 @@ html, body {
 .legal-links a:hover { color: var(--accent); }
 .build-stamp { font-size: 0.75rem; color: var(--muted); margin-top: 12px; font-family: monospace; opacity: 0.6; }
 
-/* Flash animation for completed row/col/box */
-@keyframes flashCycle {
-  0%, 100% { background: var(--tile-bg); }
-  50% { background: #fff8a3; }
+/* Flash gradient animation for completed row/col/box */
+@keyframes flashGradient {
+  0% { background: #1f6feb; }
+  100% { background: var(--tile-bg); }
 }
 .cell.flash {
-  animation: flashCycle 0.18s ease-in-out;
+  animation: flashGradient 1s ease-out;
+}
+
+:root[data-theme="dark"] .cell.flash {
+  animation: flashGradientDark 1s ease-out;
+}
+@keyframes flashGradientDark {
+  0% { background: #93c5fd; }
+  100% { background: var(--tile-bg); }
 }
 
 /* Dissolve animation for game completion */

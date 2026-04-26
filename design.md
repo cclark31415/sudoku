@@ -11,7 +11,7 @@ I want to plan a Sudoku web app game:
 1.  Hints are used by clicking on a cell with at least one note, click the hint button, then one of the notes is removed.
 1.  The game should be easily migrated to a mobile application
 1.  The numbers that are pre-populated when the game starts are black on a light blue tile, but the numbers that are placed by the player, the numbers are a medium shade of blue on a light blue tile.
-1.  When the player completes a row, column, or a 3x3 section, the tiles in the completed section flash from 1 to 9.
+1.  When the player completes a row, column, or a 3x3 section, the tiles in the completed section change color in a gradient from a light color back to the normal tile (or from a dark color to the normal tile in light mode).
 1.  When the game is completed, all tiles flash from the upper left to the lower right and the puzzle dissolves.
 1.  I want to come up with a scoring mechanism based on the difficulty of the game, how many mistakes are made, and how quickly it is solved.
 1.  Oauth2.0 needs to be implemented to store the score remotely
@@ -25,3 +25,4 @@ I want to plan a Sudoku web app game:
 1.  Update readme file to document the build and deployment process
 1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.
 1.  Include the cc.ico favicon
+1.  When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number

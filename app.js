@@ -339,27 +339,14 @@ function checkCompletions(r, c) {
 }
 
 function flashUnits(units) {
-  // Flash each cell cycling through 1..9
+  // Flash each cell with a color gradient back to normal
   units.forEach(unit => {
     unit.forEach(({ r, c }, idx) => {
       const el = cellEl(r, c);
-      const original = el.textContent;
-      let n = 1;
-      const tick = () => {
-        if (n > 9) {
-          el.textContent = original;
-          el.classList.remove("flash");
-          return;
-        }
-        el.textContent = n;
+      setTimeout(() => {
         el.classList.add("flash");
-        n++;
-        setTimeout(() => {
-          el.classList.remove("flash");
-          setTimeout(tick, 30);
-        }, 110);
-      };
-      setTimeout(tick, idx * 30);
+        setTimeout(() => el.classList.remove("flash"), 1000);
+      }, idx * 80);
     });
   });
 }
