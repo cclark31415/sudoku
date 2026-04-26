@@ -24,10 +24,18 @@
     <h1>Sudoku</h1>
     <div class="user-area">
       <button id="themeBtn" class="btn ghost" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+      <button id="userInfo" class="btn ghost" hidden title="View your statistics"></button>
       <button id="signInBtn" class="btn ghost">Sign in</button>
-      <span id="userInfo" class="user-info" hidden></span>
     </div>
   </header>
+
+  <div id="statsModal" class="stats-modal" hidden>
+    <div class="stats-content">
+      <button id="statsClose" class="stats-close" aria-label="Close">×</button>
+      <h2 id="statsTitle">Your Statistics</h2>
+      <div id="statsBody"></div>
+    </div>
+  </div>
 
   <main class="layout">
     <section class="left-panel">

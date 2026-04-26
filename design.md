@@ -15,6 +15,7 @@ I want to plan a Sudoku web app game:
 1.  When the game is completed, all tiles flash from the upper left to the lower right and the puzzle dissolves.
 1.  I want to come up with a scoring mechanism based on the difficulty of the game, how many mistakes are made, and how quickly it is solved.
 1.  Oauth2.0 needs to be implemented to store the score remotely
+1.  When logged in, the user name should be a button that loads all of their statistics.
 1.  If a user plays without logging in, the statistics are stored locally in that browser's cache
 1.  If the user places a number (not a note) in a cell, all notes in that row, column, and 3x3 grid of the same number will be turned off
 1.  If the player has completed a number (or has laid down 9 of a number in hard mode), then that number can no longer be placed as a note or as a tile
@@ -23,6 +24,6 @@ I want to plan a Sudoku web app game:
 1.  It needs to be hosted at sudoku.chrisclark.net
 1.  This needs to be hooked into github for deployment to azure
 1.  Update readme file to document the build and deployment process
-1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.
+1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
 1.  Include the cc.ico favicon
 1.  When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number

@@ -44,6 +44,10 @@ const els = {
   scoreHeading: document.getElementById("scoreHeading"),
   scoreNote: document.getElementById("scoreNote"),
   themeBtn: document.getElementById("themeBtn"),
+  statsModal: document.getElementById("statsModal"),
+  statsClose: document.getElementById("statsClose"),
+  statsTitle: document.getElementById("statsTitle"),
+  statsBody: document.getElementById("statsBody"),
 };
 
 // ----- Board rendering -----
@@ -482,6 +486,100 @@ function renderScoreList() {
   }
 }
 
+function computeStats() {
+  const key = userKey();
+  const list = JSON.parse(localStorage.getItem(key) || "[]");
+  if (!list.length) return null;
+
+  const totalGames = list.length;
+  const totalSeconds = list.reduce((s, e) => s + e.seconds, 0);
+  const totalMistakes = list.reduce((s, e) => s + (e.mistakes || 0), 0);
+  const totalHints = list.reduce((s, e) => s + (e.hintsUsed || 0), 0);
+  const avgSeconds = Math.floor(totalSeconds / totalGames);
+  const bestScore = Math.max(...list.map(e => e.score));
+
+  const byDifficulty = {};
+  for (const d of ["beginner", "intermediate", "expert"]) {
+    const games = list.filter(e => e.difficulty === d);
+    if (games.length) {
+      byDifficulty[d] = {
+        count: games.length,
+        bestScore: Math.max(...games.map(e => e.score)),
+        bestTime: Math.min(...games.map(e => e.seconds)),
+        avgMistakes: (games.reduce((s, e) => s + (e.mistakes || 0), 0) / games.length).toFixed(1),
+      };
+    }
+  }
+  const hardModeGames = list.filter(e => e.hardMode).length;
+
+  return {
+    totalGames, totalSeconds, totalMistakes, totalHints,
+    avgSeconds, bestScore, byDifficulty, hardModeGames,
+  };
+}
+
+function fmtTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function fmtTotalTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function renderStats() {
+  const stats = computeStats();
+  els.statsTitle.textContent = state.user
+    ? `${state.user.name || state.user.email} — Statistics`
+    : "Your Statistics (local)";
+
+  if (!stats) {
+    els.statsBody.innerHTML = '<div class="stats-empty">No games played yet. Solve a puzzle to see your stats!</div>';
+    return;
+  }
+
+  let html = `
+    <div class="stats-grid">
+      <div class="stats-card"><div class="label">Games solved</div><div class="value">${stats.totalGames}</div></div>
+      <div class="stats-card"><div class="label">Best score</div><div class="value">${stats.bestScore}</div></div>
+      <div class="stats-card"><div class="label">Total time</div><div class="value">${fmtTotalTime(stats.totalSeconds)}</div></div>
+      <div class="stats-card"><div class="label">Avg time</div><div class="value">${fmtTime(stats.avgSeconds)}</div></div>
+      <div class="stats-card"><div class="label">Total mistakes</div><div class="value">${stats.totalMistakes}</div></div>
+      <div class="stats-card"><div class="label">Hints used</div><div class="value">${stats.totalHints}</div></div>
+    </div>
+  `;
+
+  const diffOrder = ["beginner", "intermediate", "expert"];
+  const diffEntries = diffOrder.filter(d => stats.byDifficulty[d]);
+  if (diffEntries.length) {
+    html += '<div class="stats-section"><h3>By difficulty</h3><ul class="stats-list">';
+    for (const d of diffEntries) {
+      const s = stats.byDifficulty[d];
+      html += `<li><span>${d.charAt(0).toUpperCase() + d.slice(1)} (${s.count})</span><span>Best: ${s.bestScore} · ${fmtTime(s.bestTime)}</span></li>`;
+    }
+    html += '</ul></div>';
+  }
+
+  if (stats.hardModeGames > 0) {
+    html += `<div class="stats-section"><h3>Hard mode</h3><ul class="stats-list"><li><span>Hard mode wins</span><span>${stats.hardModeGames}</span></li></ul></div>`;
+  }
+
+  els.statsBody.innerHTML = html;
+}
+
+function openStatsModal() {
+  renderStats();
+  els.statsModal.hidden = false;
+}
+
+function closeStatsModal() {
+  els.statsModal.hidden = true;
+}
+
 // ----- Auth -----
 
 function decodeJwt(token) {
@@ -496,7 +594,7 @@ function setUser(user) {
   state.user = user;
   if (user) {
     els.signInBtn.textContent = "Sign out";
-    els.userInfo.textContent = user.name || user.email;
+    els.userInfo.textContent = `📊 ${user.name || user.email}`;
     els.userInfo.hidden = false;
     if (!previouslySignedIn) mergeLocalScoresIntoUser();
   } else {
@@ -615,6 +713,15 @@ function init() {
   });
 
   els.signInBtn.addEventListener("click", handleSignIn);
+
+  els.userInfo.addEventListener("click", openStatsModal);
+  els.statsClose.addEventListener("click", closeStatsModal);
+  els.statsModal.addEventListener("click", (e) => {
+    if (e.target === els.statsModal) closeStatsModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !els.statsModal.hidden) closeStatsModal();
+  });
 
   els.themeBtn.addEventListener("click", () => {
     const root = document.documentElement;
