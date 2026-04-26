@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#bcdcff" />
+  <title>Sudoku</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Sudoku</h1>
+    <div class="user-area">
+      <button id="signInBtn" class="btn ghost">Sign in</button>
+      <span id="userInfo" class="user-info" hidden></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="left-panel">
+      <div class="settings">
+        <label class="field">
+          <span>Difficulty</span>
+          <select id="difficulty">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="expert">Expert</option>
+          </select>
+        </label>
+        <label class="field toggle">
+          <input type="checkbox" id="hardMode" />
+          <span>Hard mode (submit to check)</span>
+        </label>
+        <button id="newGameBtn" class="btn primary">New game</button>
+      </div>
+
+      <div class="status">
+        <div class="status-item"><span>Time</span><strong id="timer">0:00</strong></div>
+        <div class="status-item"><span>Mistakes</span><strong id="mistakes">0</strong></div>
+        <div class="status-item"><span>Hints</span><strong id="hintsLeft">3</strong></div>
+        <div class="status-item"><span>Score</span><strong id="score">—</strong></div>
+      </div>
+    </section>
+
+    <section class="board-wrap">
+      <div id="board" class="board" aria-label="Sudoku board"></div>
+      <div id="message" class="message" hidden></div>
+    </section>
+
+    <section class="right-panel">
+      <div class="numpad" id="numpad">
+        <button class="num" data-num="1">1</button>
+        <button class="num" data-num="2">2</button>
+        <button class="num" data-num="3">3</button>
+        <button class="num" data-num="4">4</button>
+        <button class="num" data-num="5">5</button>
+        <button class="num" data-num="6">6</button>
+        <button class="num" data-num="7">7</button>
+        <button class="num" data-num="8">8</button>
+        <button class="num" data-num="9">9</button>
+      </div>
+      <div class="actions">
+        <button id="notesBtn" class="btn toggle-btn">Notes: off</button>
+        <button id="hintBtn" class="btn">Hint</button>
+        <button id="eraseBtn" class="btn">Erase</button>
+        <button id="submitBtn" class="btn primary" hidden>Submit</button>
+      </div>
+
+      <div class="leaderboard">
+        <h3 id="scoreHeading">Best scores (local)</h3>
+        <ol id="scoreList"></ol>
+        <p id="scoreNote" class="score-note">Sign in to keep your scores tied to your account.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="donate">
+      <span>Enjoying the game?</span>
+      <a id="paypalBtn" class="btn donate-btn" href="https://paypal.me/yourhandle" target="_blank" rel="noopener">Buy me a Diet Pepsi (PayPal)</a>
+      <a id="venmoBtn" class="btn donate-btn" href="https://venmo.com/yourhandle" target="_blank" rel="noopener">Buy me a Diet Pepsi (Venmo)</a>
+    </div>
+    <div class="legal-links">
+      <a href="/legal/privacy.html">Privacy</a>
+      <a href="/legal/terms.html">Terms</a>
+    </div>
+  </footer>
+
+  <script src="sudoku.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

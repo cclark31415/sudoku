@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#bcdcff">
+    <title>Privacy · Sudoku</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f4f8ff;
+            --surface: #ffffff;
+            --text: #1b2733;
+            --muted: #6b7a8c;
+            --accent: #1f6feb;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container { max-width: 720px; width: 100%; }
+        h1 { font-size: 32px; margin-bottom: 6px; letter-spacing: -0.5px; color: #0b4fc4; }
+        .updated { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+        h2 { font-size: 18px; margin: 28px 0 10px; }
+        p, li { line-height: 1.6; font-size: 15px; margin-bottom: 10px; }
+        ul { padding-left: 20px; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid #cdd6e0; font-size: 13px; }
+        .back { display: inline-block; margin-top: 32px; color: var(--muted); text-decoration: none; }
+        .back:hover { color: var(--text); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: April 26, 2026</p>
+
+        <p>This site is a personal project. I don't run ads, sell any data, or share personal information with third parties. This page explains what's collected and how it's used.</p>
+
+        <h2>What is collected</h2>
+        <ul>
+            <li><strong>Game scores and statistics</strong> — when you finish a game, your score, difficulty level, number of mistakes, hints used, and time taken are saved <em>in your browser's local storage</em>. This data never leaves your device unless you choose to sign in and sync it with your Google account.</li>
+            <li><strong>Preferences</strong> — your difficulty and hard mode preferences are stored in your browser's local storage.</li>
+            <li><strong>Standard server logs</strong> — the hosting platform (Microsoft Azure Static Web Apps) records basic request metadata (IP address, user agent, timestamp, URL) for up to 30 days for reliability and security. These logs are not aggregated, analyzed, or shared.</li>
+        </ul>
+
+        <h2>Local storage</h2>
+        <p>No tracking or advertising cookies are used. The following entries may be written to your browser's local storage:</p>
+        <ul>
+            <li><code>sudoku_scores_local</code> — your gameplay history on this device when not signed in.</li>
+            <li><code>sudoku_scores_[user-id]</code> — your gameplay history synced to your Google account (only if you sign in).</li>
+            <li><code>sudoku_user</code> — your signed-in user information (name, email, account ID).</li>
+        </ul>
+
+        <h2>Google Sign-In and OAuth</h2>
+        <p>If you choose to sign in, an OAuth 2.0 flow with <strong>Google</strong> is used for identity. In that flow:</p>
+        <ul>
+            <li>Google learns that you're signing in to this site.</li>
+            <li>I receive your email address, a stable subject identifier, your display name, and a JSON Web Token from Google. These are saved to your browser's local storage so I can associate your gameplay records with you.</li>
+            <li>I do not receive or store your Google password, and I don't request any scopes beyond basic profile and email.</li>
+            <li>When you sign in, any game scores saved locally are merged into your Google-account-associated bucket in your browser's local storage, and the local-only copy is removed.</li>
+        </ul>
+        <p>If you sign in and later want to disconnect, click the "Sign out" button in the game. Your local scores are preserved and can be re-linked by signing back in.</p>
+
+        <h2>Remote score storage (future feature)</h2>
+        <p>Currently, all scores are stored in your browser's local storage. In the future, a backend service may be added to store scores remotely under your Google account. Any such service will:</p>
+        <ul>
+            <li>Require your explicit opt-in.</li>
+            <li>Only store aggregate gameplay statistics (not detailed cell-by-cell moves or sensitive data).</li>
+            <li>Use your Google ID token for authentication — I do not store your password.</li>
+            <li>Delete your data upon request to <a href="mailto:admin@chrisclark.net">admin@chrisclark.net</a>.</li>
+        </ul>
+
+        <h2>Third-party services</h2>
+        <p><strong>Google Analytics:</strong> Not used. No analytics SDKs.</p>
+        <p><strong>Donation links:</strong> The PayPal and Venmo donation buttons link directly to those services. If you donate, PayPal and Venmo handle your payment information under their own privacy policies. I do not receive any personal data through these links beyond what the payment service itself discloses to me (e.g., transaction metadata).</p>
+        <p><strong>Hosting:</strong> The site is hosted on Microsoft Azure Static Web Apps. See <a href="https://privacy.microsoft.com/en-us/privacystatement">Microsoft's privacy statement</a> for details on how Azure processes data.</p>
+
+        <h2>Your rights</h2>
+        <p>Under GDPR, CCPA, and similar regulations, you have the right to access, correct, or delete any personal data held about you. Since the only personal data stored about you lives on your own device, you can clear it at any time by clearing your browser's local storage for this site, or by signing out.</p>
+        <p>For any request about server-side data (currently just the standard web logs described above), contact <a href="mailto:admin@chrisclark.net">admin@chrisclark.net</a>.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>If this policy changes in a material way, the updated date at the top of this page will change. Previous versions are visible in the <a href="https://github.com/cclark31415/sudoku">site's git history</a>.</p>
+
+        <h2>Contact</h2>
+        <p><a href="mailto:admin@chrisclark.net">admin@chrisclark.net</a></p>
+
+        <a class="back" href="/">← Back to the game</a>
+    </div>
+</body>
+</html>
