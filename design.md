@@ -16,6 +16,12 @@ I want to plan a Sudoku web app game:
 1.  I want to come up with a scoring mechanism based on the difficulty of the game, how many mistakes are made, and how quickly it is solved.
 1.  Oauth2.0 needs to be implemented to store the score remotely
 1.  If a user plays without logging in, the statistics are stored locally in that browser's cache
+1.  If the user places a number (not a note) in a cell, all notes in that row, column, and 3x3 grid of the same number will be turned off
+1.  If the player has completed a number (or has laid down 9 of a number in hard mode), then that number can no longer be placed as a note or as a tile
+1.  The selected cell should have a border around it to make it clear where the cursor is located.  
+1.  When someone changes the selected number or toggles the notes button, the seleted cell should become unselected and no number added automatically.
 1.  It needs to be hosted at sudoku.chrisclark.net
 1.  This needs to be hooked into github for deployment to azure
 1.  Update readme file to document the build and deployment process
+1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.
+1.  Include the cc.ico favicon
