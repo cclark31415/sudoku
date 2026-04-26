@@ -27,3 +27,39 @@ I want to plan a Sudoku web app game:
 1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
 1.  Include the cc.ico favicon
 1.  When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number
+
+## Android App Migration Plan
+
+There are three primary paths for turning this web application into a native Android app:
+
+### 1. Capacitor (Recommended)
+Wraps the existing web files into a native Android project.
+- **Effort:** Low (15–30 minutes).
+- **Steps:**
+    1. Install Capacitor: `npm install @capacitor/core @capacitor/cli`
+    2. Initialize: `npx cap init`
+    3. Add Android: `npx cap add android`
+    4. Copy `index.html`, `app.js`, etc., into the `www` folder.
+    5. Run `npx cap copy` and build in Android Studio.
+- **Pros:** Native feature access (vibration, splash screens), easy Play Store deployment.
+
+### 2. Progressive Web App (PWA)
+Make the website installable directly from the browser.
+- **Effort:** Very Low (10 minutes).
+- **Steps:**
+    1. Create a `manifest.json`.
+    2. Add a simple Service Worker for offline support.
+    3. Link them in `index.html`.
+- **Pros:** No app store approval needed.
+
+### 3. Trusted Web Activity (TWA)
+A middle ground for getting a PWA into the Google Play Store using tools like **Bubblewrap**.
+
+---
+
+### Key Technical Challenges
+
+1. **Google Sign-In:** Standard WebViews often block the `gsi/client` script. For a native app, use the `@capacitor-community/google-auth` plugin to leverage native Android dialogs.
+2. **Back Button Handling:** Map the Android physical back button to close modals or menus using Capacitor's `backbutton` listener or the History API.
+3. **Data Persistence:** While `localStorage` works, Capacitor's `Preferences` plugin is more resilient to OS-level cache clearing.
+4. **Haptics:** Add tactile feedback (vibration) on mistakes or completions using the Capacitor Haptics plugin to improve the "native" feel.
