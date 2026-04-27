@@ -27,6 +27,10 @@ I want to plan a Sudoku web app game:
 1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
 1.  Include the cc.ico favicon
 1.  When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number
+1.  On mobile, I should see the game board above the numbers, above the notes, hint, erase buttons, above the timer, above the difficulty selector, above best scores, above the "Enjoying the Game" section.  This is during gameplay, the number buttons should be easily selectable.
+1.  On mobile, the Notes, hint, erase buttons, and number buttons should be shorter to reduce the amount of vertical space they take up
+1.  Oauth may not work in a private window
+1.  Make it an option to require clicking a number every time you want to place a tile or note.  Click a cell, then click a number, click a cell, click a number
 
 ## Android App Migration Plan
 
