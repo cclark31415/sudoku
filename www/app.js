@@ -2,6 +2,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,6 +18,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
@@ -38,7 +40,8 @@ const state = {
   startTime: 0,
   timerId: null,
   finished: false,
-  user: null, // { name, email, sub, photo }
+  user: null, // { name, email, sub, photo, uid }
+  scores: [], // Current score list (local or remote)
 };
 
 const els = {
@@ -439,7 +442,7 @@ function computeScore(seconds, mistakes, hintsUsed, difficulty) {
   return Math.max(0, base + timeBonus - mistakePenalty - hintPenalty);
 }
 
-function finishGame() {
+async function finishGame() {
   if (state.finished) return;
   state.finished = true;
   stopTimer();
@@ -448,7 +451,7 @@ function finishGame() {
   const score = computeScore(seconds, state.mistakes, hintsUsed, state.difficulty);
   els.score.textContent = score;
 
-  saveScore({
+  const entry = {
     score,
     seconds,
     mistakes: state.mistakes,
@@ -456,8 +459,10 @@ function finishGame() {
     difficulty: state.difficulty,
     hardMode: state.hardMode,
     when: new Date().toISOString(),
-  });
-  renderScoreList();
+  };
+
+  await saveScore(entry);
+  await loadScores();
 
   setTimeout(() => {
     showMessage(`Solved! Score ${score}`);
@@ -478,7 +483,20 @@ function userKey() {
   return state.user ? `sudoku_scores_${state.user.sub}` : "sudoku_scores_local";
 }
 
-function saveScore(entry) {
+async function saveScore(entry) {
+  if (state.user) {
+    try {
+      await addDoc(collection(db, "scores"), {
+        ...entry,
+        userId: state.user.sub,
+        createdAt: new Date(),
+      });
+    } catch (e) {
+      console.error("Error adding score to Firestore", e);
+    }
+  }
+
+  // Always keep a local copy as backup
   const key = userKey();
   const list = JSON.parse(localStorage.getItem(key) || "[]");
   list.push(entry);
@@ -486,9 +504,30 @@ function saveScore(entry) {
   localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
 }
 
+async function loadScores() {
+  if (state.user) {
+    try {
+      const q = query(
+        collection(db, "scores"),
+        where("userId", "==", state.user.sub),
+        orderBy("score", "desc"),
+        limit(50)
+      );
+      const querySnapshot = await getDocs(q);
+      state.scores = querySnapshot.docs.map(doc => doc.data());
+    } catch (e) {
+      console.error("Error loading scores from Firestore", e);
+      // Fallback to local if remote fails
+      state.scores = JSON.parse(localStorage.getItem(userKey()) || "[]");
+    }
+  } else {
+    state.scores = JSON.parse(localStorage.getItem(userKey()) || "[]");
+  }
+  renderScoreList();
+}
+
 function renderScoreList() {
-  const key = userKey();
-  const list = JSON.parse(localStorage.getItem(key) || "[]").slice(0, 5);
+  const list = state.scores.slice(0, 5);
   els.scoreList.innerHTML = "";
   for (const e of list) {
     const li = document.createElement("li");
@@ -507,8 +546,7 @@ function renderScoreList() {
 }
 
 function computeStats() {
-  const key = userKey();
-  const list = JSON.parse(localStorage.getItem(key) || "[]");
+  const list = state.scores;
   if (!list.length) return null;
 
   const totalGames = list.length;
@@ -633,18 +671,27 @@ function setUser(user) {
     els.signInBtn.textContent = "Sign in";
     els.userInfo.hidden = true;
   }
-  renderScoreList();
+  loadScores();
 }
 
-function mergeLocalScoresIntoUser() {
+async function mergeLocalScoresIntoUser() {
   const localKey = "sudoku_scores_local";
   const local = JSON.parse(localStorage.getItem(localKey) || "[]");
   if (!local.length) return;
-  const userK = `sudoku_scores_${state.user.sub}`;
-  const existing = JSON.parse(localStorage.getItem(userK) || "[]");
-  const merged = existing.concat(local).sort((a, b) => b.score - a.score).slice(0, 50);
-  localStorage.setItem(userK, JSON.stringify(merged));
+
+  // Upload local scores to Firestore
+  for (const entry of local) {
+    try {
+      await addDoc(collection(db, "scores"), {
+        ...entry,
+        userId: state.user.sub,
+        createdAt: new Date(),
+      });
+    } catch (e) { console.error("Error migrating local score", e); }
+  }
+
   localStorage.removeItem(localKey);
+  await loadScores();
 }
 
 async function handleSignIn() {
@@ -658,11 +705,9 @@ async function handleSignIn() {
   }
 
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    // User state is handled by onAuthStateChanged
+    await signInWithPopup(auth, googleProvider);
   } catch (error) {
     console.error("Login failed:", error.message);
-    // Fallback for environments where popup fails
     const name = prompt("Sign in (local-only fallback). Enter a display name:");
     if (name) {
       setUser({ sub: `local_${name.toLowerCase()}`, name, email: "", idToken: "" });
