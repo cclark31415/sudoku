@@ -1,36 +1,37 @@
 I want to plan a Sudoku web app game:
-1.  No ads, but a donation button.  Call it "Buy me a Diet Pepsi".  Paypal?  Venmo?
-1.  A notes button
-1.  The notes should populate in a 3x3 grid in each cell.
-1.  If you enable or disable the notes button, then click a number, clicking any box will insert a note or the number and the number stays selected so you can click on more boxes without the need to select a number again.
-1.  The primary game will be a 3x3 grid where each box is divided into a 3x3 grid
-1.  Beginner, intermediate, and expert modes
-1.  There should be  hard mode that does not give you any hint about the accuracy of your placement of a number until a "Submit" button is pressed.
-1.  In easy mode, the submit button is not displayed as the player gets immediate feedback on the accuracy of the number placement.
-1.  Each game should get 3 hints.  The hints are given by removing one of the incorrect notes from a cell.  
-1.  Hints are used by clicking on a cell with at least one note, click the hint button, then one of the notes is removed.
-1.  The game should be easily migrated to a mobile application
-1.  The numbers that are pre-populated when the game starts are black on a light blue tile, but the numbers that are placed by the player, the numbers are a medium shade of blue on a light blue tile.
-1.  When the player completes a row, column, or a 3x3 section, the tiles in the completed section change color in a gradient from a light color back to the normal tile (or from a dark color to the normal tile in light mode).
-1.  When the game is completed, all tiles flash from the upper left to the lower right and the puzzle dissolves.
-1.  I want to come up with a scoring mechanism based on the difficulty of the game, how many mistakes are made, and how quickly it is solved.
-1.  Oauth2.0 needs to be implemented to store the score remotely
-1.  When logged in, the user name should be a button that loads all of their statistics.
-1.  If a user plays without logging in, the statistics are stored locally in that browser's cache
-1.  If the user places a number (not a note) in a cell, all notes in that row, column, and 3x3 grid of the same number will be turned off
-1.  If the player has completed a number (or has laid down 9 of a number in hard mode), then that number can no longer be placed as a note or as a tile
-1.  The selected cell should have a border around it to make it clear where the cursor is located.  
-1.  When someone changes the selected number or toggles the notes button, the seleted cell should become unselected and no number added automatically.
-1.  It needs to be hosted at sudoku.chrisclark.net
-1.  This needs to be hooked into github for deployment to azure
-1.  Update readme file to document the build and deployment process
-1.  Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
-1.  Include the cc.ico favicon
-1.  When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number
-1.  On mobile, I should see the game board above the numbers, above the notes, hint, erase buttons, above the timer, above the difficulty selector, above best scores, above the "Enjoying the Game" section.  This is during gameplay, the number buttons should be easily selectable.
-1.  On mobile, the Notes, hint, erase buttons, and number buttons should be shorter to reduce the amount of vertical space they take up
-1.  Oauth may not work in a private window
-1.  Make it an option to require clicking a number every time you want to place a tile or note.  Click a cell, then click a number, click a cell, click a number
+1. No ads, but a donation button.  Call it "Buy me a Diet Pepsi".  PayPal?  Venmo?
+2. A notes button
+3. The notes should populate in a 3x3 grid in each cell.
+4. If you enable or disable the notes button, then click a number, clicking any box will insert a note or the number and the number stays selected so you can click on more boxes without the need to select a number again.
+5. The primary game will be a 3x3 grid where each box is divided into a 3x3 grid
+6. Beginner, intermediate, and expert modes
+7. There should be  hard mode that does not give you any hint about the accuracy of your placement of a number until a "Submit" button is pressed.
+8. In easy mode, the submit button is not displayed as the player gets immediate feedback on the accuracy of the number placement.
+9. Each game should get 3 hints.  The hints are given by removing one of the incorrect notes from a cell.  
+10. Hints are used by clicking on a cell with at least one note, click the hint button, then one of the notes is removed.
+11. The game should be easily migrated to a mobile application
+12. The numbers that are pre-populated when the game starts are black on a light blue tile, but the numbers that are placed by the player, the numbers are a medium shade of blue on a light blue tile.
+13. When the player completes a row, column, or a 3x3 section, the tiles in the completed section change color in a gradient from a light color back to the normal tile (or from a dark color to the normal tile in light mode).
+14. When the game is completed, all tiles flash from the upper left to the lower right and the puzzle dissolves.
+15. I want to come up with a scoring mechanism based on the difficulty of the game, how many mistakes are made, and how quickly it is solved.
+16. Oauth2.0 needs to be implemented to store the score remotely
+17. When logged in, the username should be a button that loads all of their statistics.
+18. If a user plays without logging in, the statistics are stored locally in that browser's cache
+19. If the user places a number (not a note) in a cell, all notes in that row, column, and 3x3 grid of the same number will be turned off
+20. If the player has completed a number (or has laid down 9 of a number in hard mode), then that number can no longer be placed as a note or as a tile
+21. The selected cell should have a border around it to make it clear where the cursor is located.  
+22. When someone changes the selected number or toggles the notes button, the selected cell should become unselected and no number added automatically.
+23. It needs to be hosted at sudoku.chrisclark.net
+24. This needs to be hooked into GitHub for deployment to azure
+25. Update readme file to document the build and deployment process
+26. Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
+27. Include the cc.ico favicon
+28. When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number
+29. On mobile, I should see the game board above the numbers, above the notes, hint, erase buttons, above the timer, above the difficulty selector, above best scores, above the "Enjoying the Game" section.  This is during gameplay, the number buttons should be easily selectable.
+30. On mobile, the Notes, hint, erase buttons, and number buttons should be shorter to reduce the amount of vertical space they take up
+31. Oauth may not work in a private window
+32. Make it an option to require clicking a number every time you want to place a tile or note.  Click a cell, then click a number, click a cell, click a number.  This, along with dark/light mode, can be moved into a preferences dialog.
+33. Fix the links to the privacy and TOS documents
 
 ## Android App Migration Plan
 

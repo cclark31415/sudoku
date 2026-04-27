@@ -23,7 +23,7 @@
   <header class="topbar">
     <h1>Sudoku</h1>
     <div class="user-area">
-      <button id="themeBtn" class="btn ghost" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+      <button id="prefsBtn" class="btn ghost" title="Preferences" aria-label="Preferences">⚙️</button>
       <button id="userInfo" class="btn ghost" hidden title="View your statistics"></button>
       <button id="signInBtn" class="btn ghost">Sign in</button>
     </div>
@@ -34,11 +34,30 @@
       <button id="statsClose" class="stats-close" aria-label="Close">×</button>
       <h2 id="statsTitle">Your Statistics</h2>
       <div id="statsBody"></div>
+      <p class="auth-note">Note: Google Sign-In may not work in private/incognito windows.</p>
+    </div>
+  </div>
+
+  <div id="prefsModal" class="stats-modal" hidden>
+    <div class="stats-content">
+      <button id="prefsClose" class="stats-close" aria-label="Close">×</button>
+      <h2>Preferences</h2>
+      <div class="prefs-list">
+        <label class="field toggle">
+          <input type="checkbox" id="prefTheme" />
+          <span>Dark Mode</span>
+        </label>
+        <label class="field toggle">
+          <input type="checkbox" id="prefCellFirst" />
+          <span>Input: Click cell, then click number</span>
+        </label>
+      </div>
+      <p class="prefs-note">Changes are saved to your browser cache.</p>
     </div>
   </div>
 
   <main class="layout">
-    <section class="left-panel">
+    <section id="leftPanel" class="left-panel">
       <div class="settings">
         <label class="field">
           <span>Difficulty</span>
@@ -63,31 +82,33 @@
       </div>
     </section>
 
-    <section class="board-wrap">
+    <section id="boardSection" class="board-wrap">
       <div id="board" class="board" aria-label="Sudoku board"></div>
       <div id="message" class="message" hidden></div>
     </section>
 
-    <section class="right-panel">
-      <div class="numpad" id="numpad">
-        <button class="num" data-num="1">1</button>
-        <button class="num" data-num="2">2</button>
-        <button class="num" data-num="3">3</button>
-        <button class="num" data-num="4">4</button>
-        <button class="num" data-num="5">5</button>
-        <button class="num" data-num="6">6</button>
-        <button class="num" data-num="7">7</button>
-        <button class="num" data-num="8">8</button>
-        <button class="num" data-num="9">9</button>
+    <section id="rightPanel" class="right-panel">
+      <div id="numpadSection" class="numpad-wrap">
+        <div class="numpad" id="numpad">
+          <button class="num" data-num="1">1</button>
+          <button class="num" data-num="2">2</button>
+          <button class="num" data-num="3">3</button>
+          <button class="num" data-num="4">4</button>
+          <button class="num" data-num="5">5</button>
+          <button class="num" data-num="6">6</button>
+          <button class="num" data-num="7">7</button>
+          <button class="num" data-num="8">8</button>
+          <button class="num" data-num="9">9</button>
+        </div>
       </div>
-      <div class="actions">
+      <div id="actionsSection" class="actions">
         <button id="notesBtn" class="btn toggle-btn">Notes: off</button>
         <button id="hintBtn" class="btn">Hint</button>
         <button id="eraseBtn" class="btn">Erase</button>
         <button id="submitBtn" class="btn primary" hidden>Submit</button>
       </div>
 
-      <div class="leaderboard">
+      <div id="leaderboardSection" class="leaderboard">
         <h3 id="scoreHeading">Best scores (local)</h3>
         <ol id="scoreList"></ol>
         <p id="scoreNote" class="score-note">Sign in to keep your scores tied to your account.</p>
@@ -102,13 +123,13 @@
       <a id="venmoBtn" class="btn donate-btn" href="https://venmo.com/Christopher-Clark-1140" target="_blank" rel="noopener">Buy me a Diet Pepsi (Venmo)</a>
     </div>
     <div class="legal-links">
-      <a href="/www/legal/privacy.html">Privacy</a>
-      <a href="/www/legal/terms.html">Terms</a>
+      <a href="legal/privacy.html">Privacy</a>
+      <a href="legal/terms.html">Terms</a>
     </div>
     <div id="buildStamp" class="build-stamp"></div>
   </footer>
 
   <script src="sudoku.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -127,20 +127,23 @@ The layout is responsive and the board uses `aspect-ratio: 1 / 1`, so it scales 
 score = max(0, base + time_bonus − mistake_penalty − hint_penalty)
 ```
 
-| Component        | Value                                                  |
-| ---------------- | ------------------------------------------------------ |
-| `base`           | 1000 (beginner) / 2500 (intermediate) / 5000 (expert)  |
-| `time_bonus`     | `max(0, 1800 − seconds_elapsed)` (zeroes out at 30 min)|
-| `mistake_penalty`| `mistakes × 75`                                         |
-| `hint_penalty`   | `hints_used × 100`                                      |
+| Component         | Value                                                   |
+|-------------------|---------------------------------------------------------|
+| `base`            | 1000 (beginner) / 2500 (intermediate) / 5000 (expert)   |
+| `time_bonus`      | `max(0, 1800 − seconds_elapsed)` (zeroes out at 30 min) |
+| `mistake_penalty` | `mistakes × 75`                                         |
+| `hint_penalty`    | `hints_used × 100`                                      |
 
 Tweak the constants in `computeScore` in `app.js` if you want a different curve.
 
 ## Keyboard shortcuts
 
-| Key                        | Action                                  |
-| -------------------------- | --------------------------------------- |
-| `1`–`9`                    | Select that number (and apply if a cell is selected) |
-| `Backspace` / `Delete` / `0` | Erase selected cell                   |
-| `N`                        | Toggle notes mode                       |
-| Arrow keys                 | Move selection                          |
+| Key                          | Action                                               |
+|------------------------------|------------------------------------------------------|
+| `1`–`9`                      | Select that number (and apply if a cell is selected) |
+| `Backspace` / `Delete` / `0` | Erase selected cell                                  |
+| `N`                          | Toggle notes mode                                    |
+| Arrow keys                   | Move selection                                       |
+| `U`                          | Undo last move                                       |
+| `H`                          | Use a hint                                           |
+| `S`                          | Submit board (Hard mode)                             |

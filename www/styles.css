@@ -338,10 +338,21 @@ html, body {
 .stats-list li:last-child { border-bottom: none; }
 .stats-empty { color: var(--muted); text-align: center; padding: 20px; font-style: italic; }
 
+.auth-note, .prefs-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 16px;
+  border-top: 1px solid #e5e9ef;
+  padding-top: 12px;
+}
+.prefs-list { display: flex; flex-direction: column; gap: 12px; }
+
 :root[data-theme="dark"] .stats-content { border-color: #2c5a8c; }
 :root[data-theme="dark"] .stats-card { border-color: #2c5a8c; background: #0a1f3d; }
 :root[data-theme="dark"] .stats-list li { border-color: #2c5a8c; }
 :root[data-theme="dark"] .stats-close:hover { background: rgba(255, 255, 255, 0.1); }
+:root[data-theme="dark"] .auth-note, :root[data-theme="dark"] .prefs-note { border-top-color: #2c5a8c; }
 
 /* Flash gradient animation for completed row/col/box */
 @keyframes flashGradient {
@@ -371,14 +382,27 @@ html, body {
 
 @media (max-width: 900px) {
   .layout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     padding: 12px;
     gap: 12px;
   }
-  .left-panel, .right-panel { order: 2; }
-  .board-wrap { order: 1; }
-  .status { grid-template-columns: repeat(4, 1fr); }
-  .numpad { grid-template-columns: repeat(9, 1fr); }
-  .num { padding: 10px 0; font-size: 1.1rem; }
-  .actions { grid-template-columns: repeat(4, 1fr); }
+  .left-panel, .right-panel { display: contents; }
+
+  #boardSection { order: 1; margin-bottom: 8px; }
+  #numpadSection { order: 2; margin-bottom: 4px; }
+  #actionsSection { order: 3; margin-bottom: 8px; }
+  .status { order: 4; grid-template-columns: repeat(4, 1fr); margin-bottom: 8px; background: var(--panel); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+  .settings { order: 5; margin-bottom: 8px; }
+  #leaderboardSection { order: 6; }
+
+  /* Shorter buttons for mobile */
+  .num { padding: 8px 0; font-size: 1.1rem; }
+  .btn { padding: 6px 10px; font-size: 0.9rem; }
+  .numpad { grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  .actions { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+
+  .status-item strong { font-size: 1rem; }
+  .status-item span { font-size: 0.65rem; }
 }
+

@@ -1,26 +1,43 @@
 // SIZE and BOX are defined in sudoku.js
 
-// Google OAuth 2.0 client ID for sudoku.chrisclark.net
-const GOOGLE_CLIENT_ID = "871360095724-0pavif4b533o6jgqjk5gu8sppv0gogmn.apps.googleusercontent.com";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBrZcYKMyU_-8dzAsHzf0tI1dUGZct3M34",
+  authDomain: "sudokufirebase-4649e.firebaseapp.com",
+  projectId: "sudokufirebase-4649e",
+  storageBucket: "sudokufirebase-4649e.firebasestorage.app",
+  messagingSenderId: "135981766795",
+  appId: "1:135981766795:web:bd10ffa6d68711dd839c8e",
+  measurementId: "G-C57R8P14WT"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 const state = {
-  puzzle: null,        // initial board (zeros for blanks)
-  solution: null,      // completed solution
-  board: null,         // player's current values (0 if empty)
-  notes: null,         // 9x9 array of Sets of pencil marks
-  givens: null,        // boolean per cell
-  errors: null,        // boolean per cell (only used for shown feedback)
-  selected: null,      // {row, col}
-  selectedNumber: 0,   // sticky number; 0 = none
+  puzzle: null,
+  solution: null,
+  board: null,
+  notes: null,
+  givens: null,
+  errors: null,
+  selected: null,
+  selectedNumber: 0,
   notesMode: false,
   hardMode: false,
+  cellFirstMode: false,
   difficulty: "intermediate",
   mistakes: 0,
   hintsLeft: 3,
   startTime: 0,
   timerId: null,
   finished: false,
-  user: null,          // { name, email, sub }
+  user: null, // { name, email, sub, photo }
 };
 
 const els = {
@@ -43,7 +60,11 @@ const els = {
   scoreList: document.getElementById("scoreList"),
   scoreHeading: document.getElementById("scoreHeading"),
   scoreNote: document.getElementById("scoreNote"),
-  themeBtn: document.getElementById("themeBtn"),
+  prefsBtn: document.getElementById("prefsBtn"),
+  prefsModal: document.getElementById("prefsModal"),
+  prefsClose: document.getElementById("prefsClose"),
+  prefTheme: document.getElementById("prefTheme"),
+  prefCellFirst: document.getElementById("prefCellFirst"),
   statsModal: document.getElementById("statsModal"),
   statsClose: document.getElementById("statsClose"),
   statsTitle: document.getElementById("statsTitle"),
@@ -114,7 +135,6 @@ function refreshHighlights() {
     }
   }
 
-  // Highlight all tiles with the selected number from numpad
   if (state.selectedNumber !== 0) {
     for (let r = 0; r < SIZE; r++) {
       for (let c = 0; c < SIZE; c++) {
@@ -208,17 +228,23 @@ function stopTimer() {
 
 function onCellClick(r, c) {
   if (state.finished) return;
-  if (state.givens[r][c] && state.selectedNumber === 0) {
+  if (state.cellFirstMode) {
     state.selected = { row: r, col: c };
-    refreshHighlights();
-    return;
-  }
-  if (state.selectedNumber !== 0) {
-    applyNumber(r, c, state.selectedNumber);
+    state.selectedNumber = 0;
   } else {
-    state.selected = { row: r, col: c };
+    if (state.givens[r][c] && state.selectedNumber === 0) {
+      state.selected = { row: r, col: c };
+      refreshHighlights();
+      return;
+    }
+    if (state.selectedNumber !== 0) {
+      applyNumber(r, c, state.selectedNumber);
+    } else {
+      state.selected = { row: r, col: c };
+    }
   }
   refreshHighlights();
+  updateNumpad();
 }
 
 function applyNumber(r, c, num) {
@@ -226,13 +252,11 @@ function applyNumber(r, c, num) {
   state.selected = { row: r, col: c };
 
   if (state.notesMode) {
-    if (state.board[r][c] !== 0) return; // can't add notes to filled cell
-    // Count how many of this number are already placed
+    if (state.board[r][c] !== 0) return;
     let count = 0;
     for (let rr = 0; rr < SIZE; rr++)
       for (let cc = 0; cc < SIZE; cc++)
         if (state.board[rr][cc] === num) count++;
-    // Can't add note if number is exhausted (9 already placed)
     if (count >= 9) return;
     if (state.notes[r][c].has(num)) state.notes[r][c].delete(num);
     else state.notes[r][c].add(num);
@@ -241,12 +265,10 @@ function applyNumber(r, c, num) {
     return;
   }
 
-  // Count how many of this number are already placed (before placing)
   let numCount = 0;
   for (let rr = 0; rr < SIZE; rr++)
     for (let cc = 0; cc < SIZE; cc++)
       if (state.board[rr][cc] === num) numCount++;
-  // Can't place number if already exhausted (9 already placed)
   if (numCount >= 9) return;
 
   state.board[r][c] = num;
@@ -342,7 +364,6 @@ function checkCompletions(r, c) {
 }
 
 function flashUnits(units) {
-  // Flash each cell with a color gradient back to normal
   units.forEach(unit => {
     unit.forEach(({ r, c }, idx) => {
       const el = cellEl(r, c);
@@ -462,8 +483,6 @@ function saveScore(entry) {
   list.push(entry);
   list.sort((a, b) => b.score - a.score);
   localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
-  // Hook for remote backend:
-  // fetch("/api/scores", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${state.user?.idToken}` }, body: JSON.stringify(entry) });
 }
 
 function renderScoreList() {
@@ -580,14 +599,26 @@ function closeStatsModal() {
   els.statsModal.hidden = true;
 }
 
-// ----- Auth -----
-
-function decodeJwt(token) {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return payload;
-  } catch { return null; }
+function openPrefsModal() {
+  els.prefsModal.hidden = false;
 }
+
+function closePrefsModal() {
+  els.prefsModal.hidden = true;
+}
+
+function toggleTheme(dark) {
+  const root = document.documentElement;
+  if (dark) {
+    root.setAttribute("data-theme", "dark");
+    localStorage.setItem("theme", "dark");
+  } else {
+    root.removeAttribute("data-theme");
+    localStorage.setItem("theme", "light");
+  }
+}
+
+// ----- Auth -----
 
 function setUser(user) {
   const previouslySignedIn = !!state.user;
@@ -601,7 +632,6 @@ function setUser(user) {
     els.signInBtn.textContent = "Sign in";
     els.userInfo.hidden = true;
   }
-  localStorage.setItem("sudoku_user", JSON.stringify(user));
   renderScoreList();
 }
 
@@ -616,51 +646,47 @@ function mergeLocalScoresIntoUser() {
   localStorage.removeItem(localKey);
 }
 
-function loadGoogleSignIn() {
-  if (!GOOGLE_CLIENT_ID) return;
-  const s = document.createElement("script");
-  s.src = "https://accounts.google.com/gsi/client";
-  s.async = true;
-  s.defer = true;
-  s.onload = () => {
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: (resp) => {
-        const payload = decodeJwt(resp.credential);
-        if (payload) {
-          setUser({
-            sub: payload.sub,
-            name: payload.name,
-            email: payload.email,
-            idToken: resp.credential,
-          });
-        }
-      },
-    });
-  };
-  document.head.appendChild(s);
-}
-
-function handleSignIn() {
+async function handleSignIn() {
   if (state.user) {
-    setUser(null);
-    if (GOOGLE_CLIENT_ID && window.google) google.accounts.id.disableAutoSelect();
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error("Sign out error", e);
+    }
     return;
   }
-  if (GOOGLE_CLIENT_ID && window.google) {
-    google.accounts.id.prompt();
-    return;
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    // User state is handled by onAuthStateChanged
+  } catch (error) {
+    console.error("Login failed:", error.message);
+    // Fallback for environments where popup fails
+    const name = prompt("Sign in (local-only fallback). Enter a display name:");
+    if (name) {
+      setUser({ sub: `local_${name.toLowerCase()}`, name, email: "", idToken: "" });
+    }
   }
-  // Fallback: local profile
-  const name = prompt("Sign in (local-only fallback). Enter a display name:");
-  if (!name) return;
-  setUser({ sub: `local_${name.toLowerCase()}`, name, email: "", idToken: "" });
 }
 
 // ----- Wire up UI -----
 
 function init() {
   buildBoard();
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUser({
+        sub: user.uid,
+        name: user.displayName,
+        email: user.email,
+        photo: user.photoURL
+      });
+    } else {
+      setUser(null);
+    }
+  });
+
   els.newGameBtn.addEventListener("click", newGame);
   els.notesBtn.addEventListener("click", () => {
     state.notesMode = !state.notesMode;
@@ -680,8 +706,14 @@ function init() {
   for (const btn of els.numpad.querySelectorAll(".num")) {
     btn.addEventListener("click", () => {
       const n = +btn.dataset.num;
-      state.selectedNumber = state.selectedNumber === n ? 0 : n;
-      state.selected = null;
+      if (state.cellFirstMode) {
+        if (state.selected) {
+          applyNumber(state.selected.row, state.selected.col, n);
+        }
+      } else {
+        state.selectedNumber = state.selectedNumber === n ? 0 : n;
+        state.selected = null;
+      }
       updateNumpad();
       refreshHighlights();
     });
@@ -690,12 +722,18 @@ function init() {
   document.addEventListener("keydown", (e) => {
     if (state.finished) return;
     if (e.key >= "1" && e.key <= "9") {
-      state.selectedNumber = +e.key;
-      updateNumpad();
-      if (state.selected) {
-        const { row, col } = state.selected;
-        if (!state.givens[row][col]) applyNumber(row, col, state.selectedNumber);
+      const n = +e.key;
+      if (state.cellFirstMode) {
+        if (state.selected) applyNumber(state.selected.row, state.selected.col, n);
+      } else {
+        state.selectedNumber = n;
+        if (state.selected) {
+          const { row, col } = state.selected;
+          if (!state.givens[row][col]) applyNumber(row, col, state.selectedNumber);
+        }
       }
+      updateNumpad();
+      refreshHighlights();
     } else if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") {
       eraseSelected();
     } else if (e.key.toLowerCase() === "n") {
@@ -719,29 +757,39 @@ function init() {
   els.statsModal.addEventListener("click", (e) => {
     if (e.target === els.statsModal) closeStatsModal();
   });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !els.statsModal.hidden) closeStatsModal();
+
+  els.prefsBtn.addEventListener("click", openPrefsModal);
+  els.prefsClose.addEventListener("click", closePrefsModal);
+  els.prefsModal.addEventListener("click", (e) => {
+    if (e.target === els.prefsModal) closePrefsModal();
   });
 
-  els.themeBtn.addEventListener("click", () => {
-    const root = document.documentElement;
-    const isDark = root.getAttribute("data-theme") === "dark";
-    if (isDark) {
-      root.removeAttribute("data-theme");
-      localStorage.setItem("theme", "light");
-      els.themeBtn.textContent = "🌙";
-    } else {
-      root.setAttribute("data-theme", "dark");
-      localStorage.setItem("theme", "dark");
-      els.themeBtn.textContent = "☀️";
+  els.prefTheme.addEventListener("change", () => {
+    toggleTheme(els.prefTheme.checked);
+  });
+  els.prefCellFirst.addEventListener("change", () => {
+    state.cellFirstMode = els.prefCellFirst.checked;
+    localStorage.setItem("sudoku_cellFirst", state.cellFirstMode);
+    state.selected = null;
+    state.selectedNumber = 0;
+    refreshHighlights();
+    updateNumpad();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (!els.statsModal.hidden) closeStatsModal();
+      if (!els.prefsModal.hidden) closePrefsModal();
     }
   });
 
-  // Update theme button icon on load
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  els.themeBtn.textContent = isDark ? "☀️" : "🌙";
+  els.prefTheme.checked = isDark;
 
-  // Load and display build stamp
+  const savedCellFirst = localStorage.getItem("sudoku_cellFirst") === "true";
+  state.cellFirstMode = savedCellFirst;
+  els.prefCellFirst.checked = savedCellFirst;
+
   fetch("/version.json")
     .then(r => r.json())
     .then(v => {
@@ -753,15 +801,6 @@ function init() {
       stamp.textContent = `v${v.version} · ${timeStr}`;
     })
     .catch(() => {});
-
-  // Restore user from localStorage
-  const saved = localStorage.getItem("sudoku_user");
-  if (saved) {
-    try { setUser(JSON.parse(saved)); } catch {}
-  } else {
-    renderScoreList();
-  }
-  loadGoogleSignIn();
 
   newGame();
 }
