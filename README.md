@@ -14,9 +14,10 @@ A no-ads, mobile-friendly Sudoku web app. Three difficulties, optional hard mode
 - Row / column / box completion flashes the cells through 1–9
 - Solved board dissolves from upper-left to lower-right
 - Scoring: difficulty base + time bonus − mistake/hint penalties
-- Sign in with Google (OAuth 2.0) to namespace your scores
+- Sign in with Google via **Firebase Authentication** to sync scores across devices
+- **Real-time syncing** using Cloud Firestore
 - "Buy me a Diet Pepsi" donation links (PayPal + Venmo)
-- Mobile-friendly responsive layout, no framework — easy to wrap with Capacitor or a WKWebView for native apps
+- Mobile-friendly responsive layout, no framework — easy to wrap with Capacitor for native apps
 
 ## Build versioning
 
@@ -63,15 +64,40 @@ All web-related assets are stored in the `www/` directory. This structure was ad
 └── README.md
 ```
 
-## Google Sign-In
+## Firebase & Cloud Syncing
 
-Google OAuth 2.0 is configured for `sudoku.chrisclark.net`. The Client ID is in `app.js` (`GOOGLE_CLIENT_ID`).
+The app uses **Firebase Authentication** for user identity and **Cloud Firestore** to sync scores in real-time across devices.
 
-If the OAuth consent screen is still in **Testing** mode in Google Cloud Console, only added test users can sign in. To allow any Google user, publish the consent screen.
+### Firebase Setup
 
-If `GOOGLE_CLIENT_ID` is empty the Sign-in button falls back to a local-only profile prompt — useful for development.
+To set up your own instance of the backend:
 
-> Scores are saved to `localStorage`. Guests' scores live under `sudoku_scores_local`; once a user signs in, those local scores are merged into their account bucket (`sudoku_scores_<sub>`) and the local list is cleared. To persist scores remotely as well, add a backend endpoint and uncomment the `fetch("/api/scores", …)` call in `saveScore` in `app.js`. Validate the Google ID token (`state.user.idToken`) on the server.
+1.  Create a new project in the [Firebase Console](https://console.firebase.google.com/).
+2.  **Authentication:**
+    - Enable the **Google** sign-in provider in the "Sign-in method" tab.
+    - Add `localhost` and your production domain (e.g., `sudoku.chrisclark.net`) to the "Authorized domains" list in Settings.
+3.  **Firestore Database:**
+    - Create a database in "Production mode" or "Test mode".
+    - Select a location closest to your users.
+    - Deploy the following **Security Rules** to protect user data:
+      ```js
+      rules_version = '2';
+      service cloud.firestore {
+        match /databases/{database}/documents {
+          match /scores/{scoreId} {
+            allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+            allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+          }
+        }
+      }
+      ```
+4.  **Web App Configuration:**
+    - Register a new Web App in your Firebase project settings.
+    - Copy the `firebaseConfig` object and paste it into the top of `www/app.js`.
+
+### Local Storage & Migration
+
+Scores are initially saved to the browser's `localStorage`. Once a user signs in, any local scores are automatically uploaded to Firestore and synced across all other logged-in devices.
 
 ## Configure donation links
 

@@ -2,7 +2,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -40,8 +40,9 @@ const state = {
   startTime: 0,
   timerId: null,
   finished: false,
-  user: null, // { name, email, sub, photo, uid }
-  scores: [], // Current score list (local or remote)
+  user: null,
+  scores: [],
+  unsubscribeScores: null,
 };
 
 const els = {
@@ -462,7 +463,6 @@ async function finishGame() {
   };
 
   await saveScore(entry);
-  await loadScores();
 
   setTimeout(() => {
     showMessage(`Solved! Score ${score}`);
@@ -494,36 +494,40 @@ async function saveScore(entry) {
     } catch (e) {
       console.error("Error adding score to Firestore", e);
     }
+  } else {
+    // Local backup only if guest
+    const key = userKey();
+    const list = JSON.parse(localStorage.getItem(key) || "[]");
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score);
+    localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+    state.scores = list;
+    renderScoreList();
   }
-
-  // Always keep a local copy as backup
-  const key = userKey();
-  const list = JSON.parse(localStorage.getItem(key) || "[]");
-  list.push(entry);
-  list.sort((a, b) => b.score - a.score);
-  localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
 }
 
-async function loadScores() {
+function startScoreListener() {
+  if (state.unsubscribeScores) state.unsubscribeScores();
+
   if (state.user) {
-    try {
-      const q = query(
-        collection(db, "scores"),
-        where("userId", "==", state.user.sub),
-        orderBy("score", "desc"),
-        limit(50)
-      );
-      const querySnapshot = await getDocs(q);
-      state.scores = querySnapshot.docs.map(doc => doc.data());
-    } catch (e) {
-      console.error("Error loading scores from Firestore", e);
-      // Fallback to local if remote fails
-      state.scores = JSON.parse(localStorage.getItem(userKey()) || "[]");
-    }
+    const q = query(
+      collection(db, "scores"),
+      where("userId", "==", state.user.sub),
+      orderBy("score", "desc"),
+      limit(50)
+    );
+
+    state.unsubscribeScores = onSnapshot(q, (snapshot) => {
+      state.scores = snapshot.docs.map(doc => doc.data());
+      renderScoreList();
+      if (!els.statsModal.hidden) renderStats(); // live update stats if open
+    }, (error) => {
+      console.error("Score listener error", error);
+    });
   } else {
     state.scores = JSON.parse(localStorage.getItem(userKey()) || "[]");
+    renderScoreList();
   }
-  renderScoreList();
 }
 
 function renderScoreList() {
@@ -670,8 +674,12 @@ function setUser(user) {
   } else {
     els.signInBtn.textContent = "Sign in";
     els.userInfo.hidden = true;
+    if (state.unsubscribeScores) {
+      state.unsubscribeScores();
+      state.unsubscribeScores = null;
+    }
   }
-  loadScores();
+  startScoreListener();
 }
 
 async function mergeLocalScoresIntoUser() {
@@ -679,7 +687,6 @@ async function mergeLocalScoresIntoUser() {
   const local = JSON.parse(localStorage.getItem(localKey) || "[]");
   if (!local.length) return;
 
-  // Upload local scores to Firestore
   for (const entry of local) {
     try {
       await addDoc(collection(db, "scores"), {
@@ -691,7 +698,6 @@ async function mergeLocalScoresIntoUser() {
   }
 
   localStorage.removeItem(localKey);
-  await loadScores();
 }
 
 async function handleSignIn() {

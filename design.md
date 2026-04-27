@@ -73,4 +73,6 @@ A middle ground for getting a PWA into the Google Play Store using tools like **
 
 ### Infrastructure Updates
 - **2026-04-26:** Prepared project for Capacitor by moving all web assets into a `/www` directory and updating the Azure Static Web Apps workflow (`app_location: "/www"`). This allows native mobile code (Android/iOS) to live in the root directory without interfering with the web deployment.
+- **2026-04-26:** Migrated authentication from Google Identity Services to **Firebase Authentication**. This provides better support for private browser windows and simplifies cross-platform identity management for the upcoming Android app.
+- **2026-04-26:** Implemented **Cloud Firestore** for remote score storage. Scores now sync in real-time across all devices when a user is logged in. A local-first strategy ensures scores are backed up to the cloud automatically upon the next login if played offline.
 
