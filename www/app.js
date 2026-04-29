@@ -76,15 +76,14 @@ const els = {
   prefTheme: document.getElementById("prefTheme"),
   prefCellFirst: document.getElementById("prefCellFirst"),
   prefShowChallenge: document.getElementById("prefShowChallenge"),
-  challengeSidebar: document.getElementById("challengeSidebar"),
-  dailyProgress: document.getElementById("dailyProgress"),
-  monthlyPoints: document.getElementById("monthlyPoints"),
-  dailyStreak: document.getElementById("dailyStreak"),
-  startChallengeBtn: document.getElementById("startChallengeBtn"),
+  challengeHintBtn: document.getElementById("challengeHintBtn"),
   statsModal: document.getElementById("statsModal"),
   statsClose: document.getElementById("statsClose"),
   statsTitle: document.getElementById("statsTitle"),
   statsBody: document.getElementById("statsBody"),
+  announcementBanner: document.getElementById("announcementBanner"),
+  announcementText: document.getElementById("announcementText"),
+  closeBanner: document.getElementById("closeBanner"),
 };
 
 // ----- Board rendering -----
@@ -465,6 +464,41 @@ function dissolveBoard() {
   }
 }
 
+// ----- Announcements -----
+
+const ANNOUNCEMENTS = {
+  challenge_intro: {
+    id: "challenge_intro",
+    text: "New: Monthly Challenges! Complete 2 puzzles daily to earn extra hints and keep a streak. Enable it in Preferences (⚙️).",
+  }
+};
+
+function checkAnnouncements() {
+  const dismissed = JSON.parse(localStorage.getItem("sudoku_dismissed_announcements") || "[]");
+  // Find the first announcement that hasn't been dismissed
+  const active = Object.values(ANNOUNCEMENTS).find(a => !dismissed.includes(a.id));
+
+  if (active) {
+    els.announcementText.textContent = active.text;
+    els.announcementBanner.dataset.activeId = active.id;
+    els.announcementBanner.hidden = false;
+  } else {
+    els.announcementBanner.hidden = true;
+  }
+}
+
+function dismissAnnouncement() {
+  const id = els.announcementBanner.dataset.activeId;
+  if (!id) return;
+
+  const dismissed = JSON.parse(localStorage.getItem("sudoku_dismissed_announcements") || "[]");
+  if (!dismissed.includes(id)) {
+    dismissed.push(id);
+    localStorage.setItem("sudoku_dismissed_announcements", JSON.stringify(dismissed));
+  }
+  els.announcementBanner.hidden = true;
+}
+
 // ----- Hints -----
 
 function useHint() {
@@ -656,18 +690,7 @@ async function loadChallenge() {
 
 function renderChallengeUI() {
     if (!state.activeChallenge) return;
-    els.dailyProgress.textContent = `${state.activeChallenge.dailyCompleted} / 2`;
-    els.monthlyPoints.textContent = state.activeChallenge.monthlyPoints;
-    els.dailyStreak.textContent = state.activeChallenge.streak;
-    els.challengeSidebar.hidden = !state.showChallenge || !state.user;
-
-    if (state.activeChallenge.dailyCompleted >= 2) {
-        els.startChallengeBtn.disabled = true;
-        els.startChallengeBtn.textContent = "Done for today!";
-    } else {
-        els.startChallengeBtn.disabled = false;
-        els.startChallengeBtn.textContent = "Play Challenge";
-    }
+    if (!els.statsModal.hidden) renderStats();
 }
 
 async function updateChallengeProgress(entry) {
@@ -783,38 +806,66 @@ function renderStats() {
     ? `${state.user.name || state.user.email} — Statistics`
     : "Your Statistics (local)";
 
+  let html = "";
+
+  // Monthly Challenge Section
+  if (state.user && state.showChallenge && state.activeChallenge) {
+    const c = state.activeChallenge;
+    const isDone = c.dailyCompleted >= 2;
+    html += `
+      <div class="stats-section challenge-summary">
+        <h3>Monthly Challenge</h3>
+        <div class="stats-grid">
+          <div class="stats-card"><div class="label">Today's Progress</div><div class="value">${c.dailyCompleted} / 2</div></div>
+          <div class="stats-card"><div class="label">Monthly Points</div><div class="value">${c.monthlyPoints.toLocaleString()}</div></div>
+          <div class="stats-card"><div class="label">Daily Streak</div><div class="value">${c.streak} days</div></div>
+          <div class="stats-card"><div class="label">Extra Hint</div><div class="value">${c.hasExtraHint ? "Active ✅" : "Inactive"}</div></div>
+        </div>
+        ${!isDone ? '<button id="statPlayChallengeBtn" class="btn primary full-width" style="margin-top:10px">Play Daily Challenge</button>' : '<div class="stats-empty">You\'ve met your quota for today!</div>'}
+      </div>
+    `;
+  }
+
   if (!stats) {
-    els.statsBody.innerHTML = '<div class="stats-empty">No games played yet. Solve a puzzle to see your stats!</div>';
-    return;
-  }
+    html += '<div class="stats-empty">No games played yet. Solve a puzzle to see your stats!</div>';
+  } else {
+    html += `
+      <div class="stats-grid">
+        <div class="stats-card"><div class="label">Games solved</div><div class="value">${stats.totalGames}</div></div>
+        <div class="stats-card"><div class="label">Best score</div><div class="value">${stats.bestScore}</div></div>
+        <div class="stats-card"><div class="label">Total time</div><div class="value">${fmtTotalTime(stats.totalSeconds)}</div></div>
+        <div class="stats-card"><div class="label">Avg time</div><div class="value">${fmtTime(stats.avgSeconds)}</div></div>
+        <div class="stats-card"><div class="label">Total mistakes</div><div class="value">${stats.totalMistakes}</div></div>
+        <div class="stats-card"><div class="label">Hints used</div><div class="value">${stats.totalHints}</div></div>
+      </div>
+    `;
 
-  let html = `
-    <div class="stats-grid">
-      <div class="stats-card"><div class="label">Games solved</div><div class="value">${stats.totalGames}</div></div>
-      <div class="stats-card"><div class="label">Best score</div><div class="value">${stats.bestScore}</div></div>
-      <div class="stats-card"><div class="label">Total time</div><div class="value">${fmtTotalTime(stats.totalSeconds)}</div></div>
-      <div class="stats-card"><div class="label">Avg time</div><div class="value">${fmtTime(stats.avgSeconds)}</div></div>
-      <div class="stats-card"><div class="label">Total mistakes</div><div class="value">${stats.totalMistakes}</div></div>
-      <div class="stats-card"><div class="label">Hints used</div><div class="value">${stats.totalHints}</div></div>
-    </div>
-  `;
-
-  const diffOrder = ["beginner", "intermediate", "expert"];
-  const diffEntries = diffOrder.filter(d => stats.byDifficulty[d]);
-  if (diffEntries.length) {
-    html += '<div class="stats-section"><h3>By difficulty</h3><ul class="stats-list">';
-    for (const d of diffEntries) {
-      const s = stats.byDifficulty[d];
-      html += `<li><span>${d.charAt(0).toUpperCase() + d.slice(1)} (${s.count})</span><span>Best: ${s.bestScore} · ${fmtTime(s.bestTime)}</span></li>`;
+    const diffOrder = ["beginner", "intermediate", "expert"];
+    const diffEntries = diffOrder.filter(d => stats.byDifficulty[d]);
+    if (diffEntries.length) {
+      html += '<div class="stats-section"><h3>By difficulty</h3><ul class="stats-list">';
+      for (const d of diffEntries) {
+        const s = stats.byDifficulty[d];
+        html += `<li><span>${d.charAt(0).toUpperCase() + d.slice(1)} (${s.count})</span><span>Best: ${s.bestScore} · ${fmtTime(s.bestTime)}</span></li>`;
+      }
+      html += '</ul></div>';
     }
-    html += '</ul></div>';
-  }
 
-  if (stats.hardModeGames > 0) {
-    html += `<div class="stats-section"><h3>Hard mode</h3><ul class="stats-list"><li><span>Hard mode wins</span><span>${stats.hardModeGames}</span></li></ul></div>`;
+    if (stats.hardModeGames > 0) {
+      html += `<div class="stats-section"><h3>Hard mode</h3><ul class="stats-list"><li><span>Hard mode wins</span><span>${stats.hardModeGames}</span></li></ul></div>`;
+    }
   }
 
   els.statsBody.innerHTML = html;
+
+  // Wire up the button if it exists
+  const btn = document.getElementById("statPlayChallengeBtn");
+  if (btn) {
+    btn.onclick = () => {
+      closeStatsModal();
+      startRandomChallenge();
+    };
+  }
 }
 
 function openStatsModal() {
@@ -934,7 +985,6 @@ function init() {
   });
 
   els.newGameBtn.addEventListener("click", () => newGame());
-  els.startChallengeBtn.addEventListener("click", startRandomChallenge);
 
   els.notesBtn.addEventListener("click", () => {
     state.notesMode = !state.notesMode;
@@ -1030,6 +1080,19 @@ function init() {
     renderChallengeUI();
   });
 
+  els.challengeHintBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    alert(
+      "Daily Challenge Rules:\n" +
+      "• Complete 2 random puzzles per day to earn points.\n" +
+      "• Beginner: 100 | Intermediate: 200 | Expert: 300\n" +
+      "• Perfect Game (0 mistakes, 0 hints): Double points!\n" +
+      "• Monthly Goal: 10,000 points.\n" +
+      "• Reward: One extra hint per day for next month + Streak Freeze (allows one missed day per month)."
+    );
+  });
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (!els.statsModal.hidden) closeStatsModal();
@@ -1048,6 +1111,8 @@ function init() {
   state.showChallenge = savedShowChallenge;
   els.prefShowChallenge.checked = savedShowChallenge;
 
+  els.closeBanner.addEventListener("click", dismissAnnouncement);
+
   fetch("/version.json")
     .then(r => r.json())
     .then(v => {
@@ -1059,6 +1124,8 @@ function init() {
       stamp.textContent = `v${v.version} · ${timeStr}`;
     })
     .catch(() => {});
+
+  checkAnnouncements();
 }
 
 init();

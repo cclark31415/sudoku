@@ -29,6 +29,13 @@
     </div>
   </header>
 
+  <div id="announcementBanner" class="announcement-banner" hidden>
+    <div class="banner-content">
+      <span id="announcementText"></span>
+      <button id="closeBanner" class="banner-close" aria-label="Dismiss">&times;</button>
+    </div>
+  </div>
+
   <div id="statsModal" class="stats-modal" hidden>
     <div class="stats-content">
       <button id="statsClose" class="stats-close" aria-label="Close">×</button>
@@ -53,7 +60,8 @@
         </label>
         <label class="field toggle">
           <input type="checkbox" id="prefShowChallenge" />
-          <span>Show Daily Challenge status</span>
+          <span class="flex-grow">Show Daily Challenge status</span>
+          <button id="challengeHintBtn" class="info-circle" title="What is this?">?</button>
         </label>
       </div>
       <p class="prefs-note">Changes are saved to your browser cache.</p>
@@ -87,15 +95,6 @@
     </section>
 
     <section id="boardSection" class="board-wrap">
-      <div id="challengeSidebar" class="challenge-sidebar" hidden>
-        <div class="challenge-box">
-          <h4>Daily Challenge</h4>
-          <div class="chal-row"><span>Games</span><strong id="dailyProgress">0/2</strong></div>
-          <div class="chal-row"><span>Points</span><strong id="monthlyPoints">0</strong></div>
-          <div class="chal-row"><span>Streak</span><strong id="dailyStreak">0</strong></div>
-          <button id="startChallengeBtn" class="btn primary chal-btn">Play Challenge</button>
-        </div>
-      </div>
       <div id="board" class="board" aria-label="Sudoku board"></div>
       <div id="message" class="message" hidden></div>
     </section>

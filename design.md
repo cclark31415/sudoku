@@ -38,6 +38,10 @@ I want to plan a Sudoku web app game:
 37. We also want to make sure that the state of each game is continuously stored until complete, so if a user is on their phone, they can resume the game on the desktop.
 38. There should be a toggle to show the daily status challenge.  It should not interfere with the verticality of the game board as that is already very crowded.  Perhaps on one side of the board a small section for the daily challenge status.
 39. By default, the user will not see it until they enable it in the preferences.
+40. Put a hint button (a question mark in a circle) next to the "show daily challenge" toggle that explains what it is for.
+41. Put a message at the top of the game screen that mentions the daily challenge, how to enable it, and what it is for.  
+42. If the player clicks an X to hide the banner, you do not need to show it again.  
+43. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently.
 
 ## Android App Migration Plan
 
