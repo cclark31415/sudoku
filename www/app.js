@@ -211,11 +211,9 @@ function initGameState(puzzle, solution, savedState = null) {
     state.solution = solution;
 
     if (savedState) {
-        // Reconstruct 2D board
         state.board = [];
         for (let i = 0; i < SIZE; i++) state.board.push(savedState.board.slice(i * SIZE, (i + 1) * SIZE));
 
-        // Reconstruct 2D notes
         state.notes = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
         if (savedState.notesMap) {
             Object.entries(savedState.notesMap).forEach(([idx, nList]) => {
@@ -225,14 +223,13 @@ function initGameState(puzzle, solution, savedState = null) {
             });
         }
 
-        // Reconstruct 2D errors/givens
         state.givens = puzzle.map(row => row.map(v => v !== 0));
         state.errors = [];
         for (let i = 0; i < SIZE; i++) state.errors.push(savedState.errors.slice(i * SIZE, (i + 1) * SIZE));
 
         state.mistakes = savedState.mistakes;
         state.hintsLeft = savedState.hintsLeft;
-        state.startTime = Date.now() - savedState.elapsed;
+        state.startTime = Date.now() - (savedState.elapsed || 0);
     } else {
         state.board = puzzle.map(row => row.slice());
         state.givens = puzzle.map(row => row.map(v => v !== 0));
@@ -278,24 +275,21 @@ function saveGameState() {
 }
 
 async function saveGameStateImmediately() {
-  if (!state.user || state.finished || !state.board) return;
+  const uid = auth.currentUser?.uid;
+  if (!uid || state.finished || !state.board) return;
 
-  // Flatten 2D arrays because Firestore doesn't support nested arrays
-  const flatBoard = state.board.flat();
-  const flatErrors = state.errors.flat();
-
-  // Notes are Sets of numbers. We'll store them as a Map { index: [notes] }
   const notesMap = {};
   state.notes.flat().forEach((nSet, i) => {
     if (nSet.size > 0) notesMap[i] = Array.from(nSet);
   });
 
   const data = {
-    puzzle: state.puzzle.flat(), // also 2D
-    solution: state.solution.flat(), // also 2D
-    board: flatBoard,
+    userId: uid,
+    puzzle: state.puzzle.flat(),
+    solution: state.solution.flat(),
+    board: state.board.flat(),
     notesMap: notesMap,
-    errors: flatErrors,
+    errors: state.errors.flat(),
     mistakes: state.mistakes,
     hintsLeft: state.hintsLeft,
     elapsed: Date.now() - state.startTime,
@@ -306,14 +300,15 @@ async function saveGameStateImmediately() {
   };
 
   try {
-    await setDoc(doc(db, "activeGames", state.user.sub), data);
+    await setDoc(doc(db, "activeGames", uid), data);
   } catch (e) { console.error("Persistence error", e); }
 }
 
 async function loadActiveGame() {
-  if (!state.user) return false;
+  const uid = auth.currentUser?.uid;
+  if (!uid) return false;
   try {
-    const snap = await getDoc(doc(db, "activeGames", state.user.sub));
+    const snap = await getDoc(doc(db, "activeGames", uid));
     if (snap.exists()) {
       const data = snap.data();
       if (confirm(`Resume your ${data.difficulty} game?`)) {
@@ -321,7 +316,6 @@ async function loadActiveGame() {
         state.hardMode = data.hardMode;
         state.isChallengeGame = data.isChallengeGame;
 
-        // Un-flatten the puzzle/solution
         const puzzle = [];
         const solution = [];
         for (let i = 0; i < SIZE; i++) {
@@ -332,7 +326,7 @@ async function loadActiveGame() {
         initGameState(puzzle, solution, data);
         return true;
       } else {
-        await deleteDoc(doc(db, "activeGames", state.user.sub));
+        await deleteDoc(doc(db, "activeGames", uid));
       }
     }
   } catch (e) { console.error("Error loading active game", e); }
@@ -340,9 +334,10 @@ async function loadActiveGame() {
 }
 
 async function clearActiveGame() {
-  if (!state.user) return;
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
   try {
-    await deleteDoc(doc(db, "activeGames", state.user.sub));
+    await deleteDoc(doc(db, "activeGames", uid));
   } catch (e) { console.error("Error clearing game", e); }
 }
 
@@ -639,15 +634,16 @@ function hideMessage() { els.message.hidden = true; }
 // ----- Score storage -----
 
 function userKey() {
-  return state.user ? `sudoku_scores_${state.user.sub}` : "sudoku_scores_local";
+  return auth.currentUser ? `sudoku_scores_${auth.currentUser.uid}` : "sudoku_scores_local";
 }
 
 async function saveScore(entry) {
-  if (state.user) {
+  const uid = auth.currentUser?.uid;
+  if (uid) {
     try {
       await addDoc(collection(db, "scores"), {
         ...entry,
-        userId: state.user.sub,
+        userId: uid,
         createdAt: new Date(),
       });
     } catch (e) {
@@ -666,11 +662,12 @@ async function saveScore(entry) {
 
 function startScoreListener() {
   if (state.unsubscribeScores) state.unsubscribeScores();
+  const uid = auth.currentUser?.uid;
 
-  if (state.user) {
+  if (uid) {
     const q = query(
       collection(db, "scores"),
-      where("userId", "==", state.user.sub),
+      where("userId", "==", uid),
       orderBy("score", "desc"),
       limit(50)
     );
@@ -691,14 +688,16 @@ function startScoreListener() {
 // ----- Challenge System -----
 
 async function loadChallenge() {
-  if (!state.user) return;
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
   const now = new Date();
   const monthId = `${now.getFullYear()}_${now.getMonth() + 1}`;
   const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
 
   try {
-    const snap = await getDoc(doc(db, "challenges", state.user.sub));
+    const snap = await getDoc(doc(db, "challenges", uid));
     let data = snap.exists() ? snap.data() : {
+        userId: uid,
         monthlyPoints: 0,
         monthId: monthId,
         streak: 0,
@@ -725,7 +724,7 @@ async function loadChallenge() {
         }
     }
 
-    const daySnap = await getDoc(doc(db, "dailyChallenges", `${state.user.sub}_${dayId}`));
+    const daySnap = await getDoc(doc(db, "dailyChallenges", `${uid}_${dayId}`));
     data.dailyCompleted = daySnap.exists() ? daySnap.data().completed : 0;
 
     state.activeChallenge = data;
@@ -739,6 +738,8 @@ function renderChallengeUI() {
 }
 
 async function updateChallengeProgress(entry) {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
     const now = new Date();
     const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
     const diffPoints = { beginner: 100, intermediate: 200, expert: 300 }[entry.difficulty];
@@ -757,6 +758,7 @@ async function updateChallengeProgress(entry) {
 
     const updated = {
         ...state.activeChallenge,
+        userId: uid,
         monthlyPoints: newMonthly,
         streak: newStreak,
         lastCompletedDay: dayId,
@@ -764,15 +766,17 @@ async function updateChallengeProgress(entry) {
         hasExtraHint: hasReward
     };
 
-    await setDoc(doc(db, "challenges", state.user.sub), updated);
-    await setDoc(doc(db, "dailyChallenges", `${state.user.sub}_${dayId}`), { completed: newDaily });
+    await setDoc(doc(db, "challenges", uid), updated);
+    await setDoc(doc(db, "dailyChallenges", `${uid}_${dayId}`), { userId: uid, completed: newDaily });
 
     state.activeChallenge = updated;
     renderChallengeUI();
 }
 
 function startRandomChallenge() {
-    const seedString = `${state.user.sub}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const seedString = `${uid}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
     let hash = 0;
     for (let i = 0; i < seedString.length; i++) hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
     const difficulties = ["beginner", "intermediate", "expert"];
@@ -853,7 +857,6 @@ function renderStats() {
 
   let html = "";
 
-  // Monthly Challenge Section
   if (state.user && state.showChallenge && state.activeChallenge) {
     const c = state.activeChallenge;
     const isDone = c.dailyCompleted >= 2;
@@ -862,8 +865,8 @@ function renderStats() {
         <h3>Monthly Challenge</h3>
         <div class="stats-grid">
           <div class="stats-card"><div class="label">Today's Progress</div><div class="value">${c.dailyCompleted} / 2</div></div>
-          <div class="stats-card"><div class="label">Monthly Points</div><div class="value">${c.monthlyPoints.toLocaleString()}</div></div>
-          <div class="stats-card"><div class="label">Daily Streak</div><div class="value">${c.streak} days</div></div>
+          <div class="stats-card"><div class="label">Monthly Points</div><div class="value">${(c.monthlyPoints || 0).toLocaleString()}</div></div>
+          <div class="stats-card"><div class="label">Daily Streak</div><div class="value">${c.streak || 0} days</div></div>
           <div class="stats-card"><div class="label">Extra Hint</div><div class="value">${c.hasExtraHint ? "Active ✅" : "Inactive"}</div></div>
         </div>
         ${!isDone ? '<button id="statPlayChallengeBtn" class="btn primary full-width" style="margin-top:10px">Play Daily Challenge</button>' : '<div class="stats-empty">You\'ve met your quota for today!</div>'}
@@ -972,11 +975,14 @@ async function mergeLocalScoresIntoUser() {
   const local = JSON.parse(localStorage.getItem(localKey) || "[]");
   if (!local.length) return;
 
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+
   for (const entry of local) {
     try {
       await addDoc(collection(db, "scores"), {
         ...entry,
-        userId: state.user.sub,
+        userId: uid,
         createdAt: new Date(),
       });
     } catch (e) { console.error("Error migrating local score", e); }
