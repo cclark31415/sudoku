@@ -44,9 +44,10 @@ const state = {
   user: null,
   scores: [],
   unsubscribeScores: null,
-  activeChallenge: null, // { dailyCompleted, monthlyPoints, streak, hasExtraHint, ... }
+  activeChallenge: null,
   isChallengeGame: false,
-  persisting: false,
+  saveTimeout: null,
+  authInitialized: false,
 };
 
 const els = {
@@ -202,7 +203,7 @@ function newGame(diff = null) {
   setTimeout(() => {
     const { puzzle, solution } = Sudoku.generatePuzzle(difficulty);
     initGameState(puzzle, solution);
-    saveGameState();
+    saveGameStateImmediately();
   }, 30);
 }
 
@@ -246,9 +247,13 @@ function stopTimer() {
 
 // ----- Persistence -----
 
-async function saveGameState() {
-  if (!state.user || state.finished) return;
-  state.persisting = true;
+function saveGameState() {
+  if (state.saveTimeout) clearTimeout(state.saveTimeout);
+  state.saveTimeout = setTimeout(() => saveGameStateImmediately(), 2000);
+}
+
+async function saveGameStateImmediately() {
+  if (!state.user || state.finished || !state.board) return;
   const elapsed = Date.now() - state.startTime;
   const data = {
     puzzle: state.puzzle,
@@ -267,11 +272,10 @@ async function saveGameState() {
   try {
     await setDoc(doc(db, "activeGames", state.user.sub), data);
   } catch (e) { console.error("Persistence error", e); }
-  state.persisting = false;
 }
 
 async function loadActiveGame() {
-  if (!state.user) return;
+  if (!state.user) return false;
   try {
     const snap = await getDoc(doc(db, "activeGames", state.user.sub));
     if (snap.exists()) {
@@ -281,11 +285,13 @@ async function loadActiveGame() {
         state.hardMode = data.hardMode;
         state.isChallengeGame = data.isChallengeGame;
         initGameState(data.puzzle, data.solution, data);
+        return true;
       } else {
         await deleteDoc(doc(db, "activeGames", state.user.sub));
       }
     }
   } catch (e) { console.error("Error loading active game", e); }
+  return false;
 }
 
 async function clearActiveGame() {
@@ -622,14 +628,12 @@ async function loadChallenge() {
         hasExtraHint: false
     };
 
-    // Reset monthly if new month
     if (data.monthId !== monthId) {
         if (data.monthlyPoints >= 10000) data.streakFreezes = 1;
         data.monthlyPoints = 0;
         data.monthId = monthId;
     }
 
-    // Check streak
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayId = `${yesterday.getFullYear()}_${yesterday.getMonth() + 1}_${yesterday.getDate()}`;
 
@@ -642,7 +646,6 @@ async function loadChallenge() {
         }
     }
 
-    // Daily progress
     const daySnap = await getDoc(doc(db, "dailyChallenges", `${state.user.sub}_${dayId}`));
     data.dailyCompleted = daySnap.exists() ? daySnap.data().completed : 0;
 
@@ -656,6 +659,7 @@ function renderChallengeUI() {
     els.dailyProgress.textContent = `${state.activeChallenge.dailyCompleted} / 2`;
     els.monthlyPoints.textContent = state.activeChallenge.monthlyPoints;
     els.dailyStreak.textContent = state.activeChallenge.streak;
+    els.challengeSidebar.hidden = !state.showChallenge || !state.user;
 
     if (state.activeChallenge.dailyCompleted >= 2) {
         els.startChallengeBtn.disabled = true;
@@ -700,10 +704,9 @@ async function updateChallengeProgress(entry) {
 }
 
 function startRandomChallenge() {
-    const seed = `${state.user.sub}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
-    // Use hash of seed to pick difficulty
+    const seedString = `${state.user.sub}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
     let hash = 0;
-    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    for (let i = 0; i < seedString.length; i++) hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
     const difficulties = ["beginner", "intermediate", "expert"];
     const diff = difficulties[Math.abs(hash) % 3];
     newGame(diff);
@@ -844,7 +847,7 @@ function toggleTheme(dark) {
 
 // ----- Auth -----
 
-function setUser(user) {
+async function setUser(user) {
   const previouslySignedIn = !!state.user;
   state.user = user;
   if (user) {
@@ -852,8 +855,11 @@ function setUser(user) {
     els.userInfo.textContent = `📊 ${user.name || user.email}`;
     els.userInfo.hidden = false;
     if (!previouslySignedIn) mergeLocalScoresIntoUser();
-    loadActiveGame();
-    loadChallenge();
+
+    // Wait for challenge data to set hasExtraHint state
+    await loadChallenge();
+    const resumed = await loadActiveGame();
+    if (!resumed) newGame();
   } else {
     els.signInBtn.textContent = "Sign in";
     els.userInfo.hidden = true;
@@ -863,6 +869,7 @@ function setUser(user) {
     }
     state.activeChallenge = null;
     els.challengeSidebar.hidden = true;
+    newGame();
   }
   startScoreListener();
 }
@@ -912,6 +919,8 @@ function init() {
   buildBoard();
 
   onAuthStateChanged(auth, (user) => {
+    if (state.authInitialized) return;
+    state.authInitialized = true;
     if (user) {
       setUser({
         sub: user.uid,
@@ -940,7 +949,7 @@ function init() {
   els.hardMode.addEventListener("change", () => {
     state.hardMode = els.hardMode.checked;
     els.submitBtn.hidden = !state.hardMode;
-    saveGameState();
+    saveGameStateImmediately();
   });
 
   for (const btn of els.numpad.querySelectorAll(".num")) {
@@ -1018,7 +1027,7 @@ function init() {
   els.prefShowChallenge.addEventListener("change", () => {
     state.showChallenge = els.prefShowChallenge.checked;
     localStorage.setItem("sudoku_showChallenge", state.showChallenge);
-    els.challengeSidebar.hidden = !state.showChallenge || !state.user;
+    renderChallengeUI();
   });
 
   document.addEventListener("keydown", (e) => {
@@ -1050,8 +1059,6 @@ function init() {
       stamp.textContent = `v${v.version} · ${timeStr}`;
     })
     .catch(() => {});
-
-  newGame();
 }
 
 init();
