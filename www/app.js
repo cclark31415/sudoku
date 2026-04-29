@@ -209,17 +209,43 @@ function newGame(diff = null) {
 function initGameState(puzzle, solution, savedState = null) {
     state.puzzle = puzzle;
     state.solution = solution;
-    state.board = savedState ? savedState.board : puzzle.map(row => row.slice());
-    state.givens = puzzle.map(row => row.map(v => v !== 0));
-    state.notes = savedState ? savedState.notes.map(row => row.map(nSet => new Set(nSet))) :
-                 Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
-    state.errors = savedState ? savedState.errors : Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
+
+    if (savedState) {
+        // Reconstruct 2D board
+        state.board = [];
+        for (let i = 0; i < SIZE; i++) state.board.push(savedState.board.slice(i * SIZE, (i + 1) * SIZE));
+
+        // Reconstruct 2D notes
+        state.notes = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
+        if (savedState.notesMap) {
+            Object.entries(savedState.notesMap).forEach(([idx, nList]) => {
+                const r = Math.floor(+idx / SIZE);
+                const c = +idx % SIZE;
+                state.notes[r][c] = new Set(nList);
+            });
+        }
+
+        // Reconstruct 2D errors/givens
+        state.givens = puzzle.map(row => row.map(v => v !== 0));
+        state.errors = [];
+        for (let i = 0; i < SIZE; i++) state.errors.push(savedState.errors.slice(i * SIZE, (i + 1) * SIZE));
+
+        state.mistakes = savedState.mistakes;
+        state.hintsLeft = savedState.hintsLeft;
+        state.startTime = Date.now() - savedState.elapsed;
+    } else {
+        state.board = puzzle.map(row => row.slice());
+        state.givens = puzzle.map(row => row.map(v => v !== 0));
+        state.notes = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
+        state.errors = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
+        state.mistakes = 0;
+        state.hintsLeft = (state.activeChallenge?.hasExtraHint ? 4 : 3);
+        state.startTime = Date.now();
+    }
+
     state.selected = null;
     state.selectedNumber = 0;
-    state.mistakes = savedState ? savedState.mistakes : 0;
-    state.hintsLeft = savedState ? savedState.hintsLeft : (state.activeChallenge?.hasExtraHint ? 4 : 3);
     state.finished = false;
-    state.startTime = savedState ? (Date.now() - savedState.elapsed) : Date.now();
 
     els.submitBtn.hidden = !state.hardMode;
     els.mistakes.textContent = state.mistakes;
@@ -253,21 +279,32 @@ function saveGameState() {
 
 async function saveGameStateImmediately() {
   if (!state.user || state.finished || !state.board) return;
-  const elapsed = Date.now() - state.startTime;
+
+  // Flatten 2D arrays because Firestore doesn't support nested arrays
+  const flatBoard = state.board.flat();
+  const flatErrors = state.errors.flat();
+
+  // Notes are Sets of numbers. We'll store them as a Map { index: [notes] }
+  const notesMap = {};
+  state.notes.flat().forEach((nSet, i) => {
+    if (nSet.size > 0) notesMap[i] = Array.from(nSet);
+  });
+
   const data = {
-    puzzle: state.puzzle,
-    solution: state.solution,
-    board: state.board,
-    notes: state.notes.map(row => row.map(nSet => Array.from(nSet))),
-    errors: state.errors,
+    puzzle: state.puzzle.flat(), // also 2D
+    solution: state.solution.flat(), // also 2D
+    board: flatBoard,
+    notesMap: notesMap,
+    errors: flatErrors,
     mistakes: state.mistakes,
     hintsLeft: state.hintsLeft,
-    elapsed: elapsed,
+    elapsed: Date.now() - state.startTime,
     difficulty: state.difficulty,
     hardMode: state.hardMode,
     isChallengeGame: state.isChallengeGame,
     updatedAt: serverTimestamp(),
   };
+
   try {
     await setDoc(doc(db, "activeGames", state.user.sub), data);
   } catch (e) { console.error("Persistence error", e); }
@@ -283,7 +320,16 @@ async function loadActiveGame() {
         state.difficulty = data.difficulty;
         state.hardMode = data.hardMode;
         state.isChallengeGame = data.isChallengeGame;
-        initGameState(data.puzzle, data.solution, data);
+
+        // Un-flatten the puzzle/solution
+        const puzzle = [];
+        const solution = [];
+        for (let i = 0; i < SIZE; i++) {
+          puzzle.push(data.puzzle.slice(i * SIZE, (i + 1) * SIZE));
+          solution.push(data.solution.slice(i * SIZE, (i + 1) * SIZE));
+        }
+
+        initGameState(puzzle, solution, data);
         return true;
       } else {
         await deleteDoc(doc(db, "activeGames", state.user.sub));
@@ -475,7 +521,6 @@ const ANNOUNCEMENTS = {
 
 function checkAnnouncements() {
   const dismissed = JSON.parse(localStorage.getItem("sudoku_dismissed_announcements") || "[]");
-  // Find the first announcement that hasn't been dismissed
   const active = Object.values(ANNOUNCEMENTS).find(a => !dismissed.includes(a.id));
 
   if (active) {
@@ -858,7 +903,6 @@ function renderStats() {
 
   els.statsBody.innerHTML = html;
 
-  // Wire up the button if it exists
   const btn = document.getElementById("statPlayChallengeBtn");
   if (btn) {
     btn.onclick = () => {
@@ -907,7 +951,6 @@ async function setUser(user) {
     els.userInfo.hidden = false;
     if (!previouslySignedIn) mergeLocalScoresIntoUser();
 
-    // Wait for challenge data to set hasExtraHint state
     await loadChallenge();
     const resumed = await loadActiveGame();
     if (!resumed) newGame();
@@ -919,7 +962,6 @@ async function setUser(user) {
       state.unsubscribeScores = null;
     }
     state.activeChallenge = null;
-    els.challengeSidebar.hidden = true;
     newGame();
   }
   startScoreListener();
@@ -1093,6 +1135,8 @@ function init() {
     );
   });
 
+  els.closeBanner.addEventListener("click", dismissAnnouncement);
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (!els.statsModal.hidden) closeStatsModal();
@@ -1110,8 +1154,6 @@ function init() {
   const savedShowChallenge = localStorage.getItem("sudoku_showChallenge") === "true";
   state.showChallenge = savedShowChallenge;
   els.prefShowChallenge.checked = savedShowChallenge;
-
-  els.closeBanner.addEventListener("click", dismissAnnouncement);
 
   fetch("/version.json")
     .then(r => r.json())
