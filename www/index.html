@@ -51,6 +51,10 @@
           <input type="checkbox" id="prefCellFirst" />
           <span>Input: Click cell, then click number</span>
         </label>
+        <label class="field toggle">
+          <input type="checkbox" id="prefShowChallenge" />
+          <span>Show Daily Challenge status</span>
+        </label>
       </div>
       <p class="prefs-note">Changes are saved to your browser cache.</p>
     </div>
@@ -83,6 +87,15 @@
     </section>
 
     <section id="boardSection" class="board-wrap">
+      <div id="challengeSidebar" class="challenge-sidebar" hidden>
+        <div class="challenge-box">
+          <h4>Daily Challenge</h4>
+          <div class="chal-row"><span>Games</span><strong id="dailyProgress">0/2</strong></div>
+          <div class="chal-row"><span>Points</span><strong id="monthlyPoints">0</strong></div>
+          <div class="chal-row"><span>Streak</span><strong id="dailyStreak">0</strong></div>
+          <button id="startChallengeBtn" class="btn primary chal-btn">Play Challenge</button>
+        </div>
+      </div>
       <div id="board" class="board" aria-label="Sudoku board"></div>
       <div id="message" class="message" hidden></div>
     </section>

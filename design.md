@@ -32,6 +32,12 @@ I want to plan a Sudoku web app game:
 31. Oauth may not work in a private window
 32. Make it an option to require clicking a number every time you want to place a tile or note.  Click a cell, then click a number, click a cell, click a number.  This, along with dark/light mode, can be moved into a preferences dialog.
 33. Fix the links to the privacy and TOS documents
+34. I want to come up with a monthly challenge.  Complete 2 puzzles per day of random difficulties and the monthly challenge points are calculated with a fixed amount.  Maybe 100 for beginner, 200 for intermediate, etc. and the score will be doubled for perfect games with no errors and without using hints. 
+35. At the end of the first month, achievement of a reasonable score will grant the user one extra hint per day as long as they keep up a daily streak.  
+36. If the streak is broken the daily hints stop, but after achieving the first month's minimum score, they will also get one automatic streak freeze that allows them to skip one day per month.
+37. We also want to make sure that the state of each game is continuously stored until complete, so if a user is on their phone, they can resume the game on the desktop.
+38. There should be a toggle to show the daily status challenge.  It should not interfere with the verticality of the game board as that is already very crowded.  Perhaps on one side of the board a small section for the daily challenge status.
+39. By default, the user will not see it until they enable it in the preferences.
 
 ## Android App Migration Plan
 
@@ -75,4 +81,6 @@ A middle ground for getting a PWA into the Google Play Store using tools like **
 - **2026-04-26:** Prepared project for Capacitor by moving all web assets into a `/www` directory and updating the Azure Static Web Apps workflow (`app_location: "/www"`). This allows native mobile code (Android/iOS) to live in the root directory without interfering with the web deployment.
 - **2026-04-26:** Migrated authentication from Google Identity Services to **Firebase Authentication**. This provides better support for private browser windows and simplifies cross-platform identity management for the upcoming Android app.
 - **2026-04-26:** Implemented **Cloud Firestore** for remote score storage. Scores now sync in real-time across all devices when a user is logged in. A local-first strategy ensures scores are backed up to the cloud automatically upon the next login if played offline.
+- **2026-04-26:** Added **Real-time Game Persistence**. The state of the current board is saved to Firestore (`activeGames` collection) on every move, allowing users to switch devices seamlessly mid-game.
+- **2026-04-26:** Implemented the **Monthly Challenge System**. Added a toggleable sidebar (via Preferences) that tracks daily goals (2 games), monthly points (10,000 goal), and streaks. Randomized daily challenges are generated uniquely for each user.
 

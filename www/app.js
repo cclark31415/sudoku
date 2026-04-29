@@ -2,7 +2,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, limit, setDoc, doc, getDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -34,6 +34,7 @@ const state = {
   notesMode: false,
   hardMode: false,
   cellFirstMode: false,
+  showChallenge: false,
   difficulty: "intermediate",
   mistakes: 0,
   hintsLeft: 3,
@@ -43,6 +44,9 @@ const state = {
   user: null,
   scores: [],
   unsubscribeScores: null,
+  activeChallenge: null, // { dailyCompleted, monthlyPoints, streak, hasExtraHint, ... }
+  isChallengeGame: false,
+  persisting: false,
 };
 
 const els = {
@@ -70,6 +74,12 @@ const els = {
   prefsClose: document.getElementById("prefsClose"),
   prefTheme: document.getElementById("prefTheme"),
   prefCellFirst: document.getElementById("prefCellFirst"),
+  prefShowChallenge: document.getElementById("prefShowChallenge"),
+  challengeSidebar: document.getElementById("challengeSidebar"),
+  dailyProgress: document.getElementById("dailyProgress"),
+  monthlyPoints: document.getElementById("monthlyPoints"),
+  dailyStreak: document.getElementById("dailyStreak"),
+  startChallengeBtn: document.getElementById("startChallengeBtn"),
   statsModal: document.getElementById("statsModal"),
   statsClose: document.getElementById("statsClose"),
   statsTitle: document.getElementById("statsTitle"),
@@ -182,37 +192,42 @@ function updateNumpad() {
 
 // ----- Game lifecycle -----
 
-function newGame() {
-  const difficulty = els.difficulty.value;
+function newGame(diff = null) {
+  const difficulty = diff || els.difficulty.value;
   state.difficulty = difficulty;
   state.hardMode = els.hardMode.checked;
+  state.isChallengeGame = !!diff;
 
   showMessage("Generating puzzle…");
   setTimeout(() => {
     const { puzzle, solution } = Sudoku.generatePuzzle(difficulty);
+    initGameState(puzzle, solution);
+    saveGameState();
+  }, 30);
+}
+
+function initGameState(puzzle, solution, savedState = null) {
     state.puzzle = puzzle;
     state.solution = solution;
-    state.board = puzzle.map(row => row.slice());
+    state.board = savedState ? savedState.board : puzzle.map(row => row.slice());
     state.givens = puzzle.map(row => row.map(v => v !== 0));
-    state.notes = Array.from({ length: SIZE }, () =>
-      Array.from({ length: SIZE }, () => new Set())
-    );
-    state.errors = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
+    state.notes = savedState ? savedState.notes.map(row => row.map(nSet => new Set(nSet))) :
+                 Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
+    state.errors = savedState ? savedState.errors : Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
     state.selected = null;
     state.selectedNumber = 0;
-    state.mistakes = 0;
-    state.hintsLeft = 3;
+    state.mistakes = savedState ? savedState.mistakes : 0;
+    state.hintsLeft = savedState ? savedState.hintsLeft : (state.activeChallenge?.hasExtraHint ? 4 : 3);
     state.finished = false;
-    state.startTime = Date.now();
+    state.startTime = savedState ? (Date.now() - savedState.elapsed) : Date.now();
 
     els.submitBtn.hidden = !state.hardMode;
-    els.mistakes.textContent = "0";
-    els.hintsLeft.textContent = "3";
+    els.mistakes.textContent = state.mistakes;
+    els.hintsLeft.textContent = state.hintsLeft;
     els.score.textContent = "—";
     hideMessage();
     startTimer();
     renderAll();
-  }, 30);
 }
 
 function startTimer() {
@@ -227,6 +242,57 @@ function startTimer() {
 function stopTimer() {
   if (state.timerId) clearInterval(state.timerId);
   state.timerId = null;
+}
+
+// ----- Persistence -----
+
+async function saveGameState() {
+  if (!state.user || state.finished) return;
+  state.persisting = true;
+  const elapsed = Date.now() - state.startTime;
+  const data = {
+    puzzle: state.puzzle,
+    solution: state.solution,
+    board: state.board,
+    notes: state.notes.map(row => row.map(nSet => Array.from(nSet))),
+    errors: state.errors,
+    mistakes: state.mistakes,
+    hintsLeft: state.hintsLeft,
+    elapsed: elapsed,
+    difficulty: state.difficulty,
+    hardMode: state.hardMode,
+    isChallengeGame: state.isChallengeGame,
+    updatedAt: serverTimestamp(),
+  };
+  try {
+    await setDoc(doc(db, "activeGames", state.user.sub), data);
+  } catch (e) { console.error("Persistence error", e); }
+  state.persisting = false;
+}
+
+async function loadActiveGame() {
+  if (!state.user) return;
+  try {
+    const snap = await getDoc(doc(db, "activeGames", state.user.sub));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (confirm(`Resume your ${data.difficulty} game?`)) {
+        state.difficulty = data.difficulty;
+        state.hardMode = data.hardMode;
+        state.isChallengeGame = data.isChallengeGame;
+        initGameState(data.puzzle, data.solution, data);
+      } else {
+        await deleteDoc(doc(db, "activeGames", state.user.sub));
+      }
+    }
+  } catch (e) { console.error("Error loading active game", e); }
+}
+
+async function clearActiveGame() {
+  if (!state.user) return;
+  try {
+    await deleteDoc(doc(db, "activeGames", state.user.sub));
+  } catch (e) { console.error("Error clearing game", e); }
 }
 
 // ----- Input handling -----
@@ -267,6 +333,7 @@ function applyNumber(r, c, num) {
     else state.notes[r][c].add(num);
     renderCell(r, c);
     refreshHighlights();
+    saveGameState();
     return;
   }
 
@@ -297,6 +364,7 @@ function applyNumber(r, c, num) {
 
   refreshHighlights();
   updateNumpad();
+  saveGameState();
 
   if (boardFilled() && !state.hardMode && solvedCorrectly()) {
     finishGame();
@@ -328,6 +396,7 @@ function eraseSelected() {
   renderCell(row, col);
   refreshHighlights();
   updateNumpad();
+  saveGameState();
 }
 
 // ----- Completion detection / animations -----
@@ -405,6 +474,7 @@ function useHint() {
   state.hintsLeft--;
   els.hintsLeft.textContent = state.hintsLeft;
   renderCell(row, col);
+  saveGameState();
 }
 
 // ----- Submit (hard mode) -----
@@ -426,6 +496,7 @@ function submitGame() {
   }
   state.mistakes += mistakes;
   els.mistakes.textContent = state.mistakes;
+  saveGameState();
   if (boardFilled() && solvedCorrectly()) {
     finishGame();
   } else {
@@ -448,7 +519,7 @@ async function finishGame() {
   state.finished = true;
   stopTimer();
   const seconds = Math.floor((Date.now() - state.startTime) / 1000);
-  const hintsUsed = 3 - state.hintsLeft;
+  const hintsUsed = (state.activeChallenge?.hasExtraHint ? 4 : 3) - state.hintsLeft;
   const score = computeScore(seconds, state.mistakes, hintsUsed, state.difficulty);
   els.score.textContent = score;
 
@@ -459,10 +530,13 @@ async function finishGame() {
     hintsUsed,
     difficulty: state.difficulty,
     hardMode: state.hardMode,
+    isChallengeGame: state.isChallengeGame,
     when: new Date().toISOString(),
   };
 
   await saveScore(entry);
+  if (state.isChallengeGame) await updateChallengeProgress(entry);
+  await clearActiveGame();
 
   setTimeout(() => {
     showMessage(`Solved! Score ${score}`);
@@ -495,7 +569,6 @@ async function saveScore(entry) {
       console.error("Error adding score to Firestore", e);
     }
   } else {
-    // Local backup only if guest
     const key = userKey();
     const list = JSON.parse(localStorage.getItem(key) || "[]");
     list.push(entry);
@@ -520,7 +593,7 @@ function startScoreListener() {
     state.unsubscribeScores = onSnapshot(q, (snapshot) => {
       state.scores = snapshot.docs.map(doc => doc.data());
       renderScoreList();
-      if (!els.statsModal.hidden) renderStats(); // live update stats if open
+      if (!els.statsModal.hidden) renderStats();
     }, (error) => {
       console.error("Score listener error", error);
     });
@@ -529,6 +602,114 @@ function startScoreListener() {
     renderScoreList();
   }
 }
+
+// ----- Challenge System -----
+
+async function loadChallenge() {
+  if (!state.user) return;
+  const now = new Date();
+  const monthId = `${now.getFullYear()}_${now.getMonth() + 1}`;
+  const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
+
+  try {
+    const snap = await getDoc(doc(db, "challenges", state.user.sub));
+    let data = snap.exists() ? snap.data() : {
+        monthlyPoints: 0,
+        monthId: monthId,
+        streak: 0,
+        lastCompletedDay: null,
+        streakFreezes: 0,
+        hasExtraHint: false
+    };
+
+    // Reset monthly if new month
+    if (data.monthId !== monthId) {
+        if (data.monthlyPoints >= 10000) data.streakFreezes = 1;
+        data.monthlyPoints = 0;
+        data.monthId = monthId;
+    }
+
+    // Check streak
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayId = `${yesterday.getFullYear()}_${yesterday.getMonth() + 1}_${yesterday.getDate()}`;
+
+    if (data.lastCompletedDay && data.lastCompletedDay !== dayId && data.lastCompletedDay !== yesterdayId) {
+        if (data.streakFreezes > 0) {
+            data.streakFreezes--;
+        } else {
+            data.streak = 0;
+            data.hasExtraHint = false;
+        }
+    }
+
+    // Daily progress
+    const daySnap = await getDoc(doc(db, "dailyChallenges", `${state.user.sub}_${dayId}`));
+    data.dailyCompleted = daySnap.exists() ? daySnap.data().completed : 0;
+
+    state.activeChallenge = data;
+    renderChallengeUI();
+  } catch (e) { console.error("Challenge load error", e); }
+}
+
+function renderChallengeUI() {
+    if (!state.activeChallenge) return;
+    els.dailyProgress.textContent = `${state.activeChallenge.dailyCompleted} / 2`;
+    els.monthlyPoints.textContent = state.activeChallenge.monthlyPoints;
+    els.dailyStreak.textContent = state.activeChallenge.streak;
+
+    if (state.activeChallenge.dailyCompleted >= 2) {
+        els.startChallengeBtn.disabled = true;
+        els.startChallengeBtn.textContent = "Done for today!";
+    } else {
+        els.startChallengeBtn.disabled = false;
+        els.startChallengeBtn.textContent = "Play Challenge";
+    }
+}
+
+async function updateChallengeProgress(entry) {
+    const now = new Date();
+    const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
+    const diffPoints = { beginner: 100, intermediate: 200, expert: 300 }[entry.difficulty];
+    let points = diffPoints;
+    if (entry.mistakes === 0 && entry.hintsUsed === 0) points *= 2;
+
+    const newDaily = Math.min(2, (state.activeChallenge.dailyCompleted || 0) + 1);
+    const newMonthly = (state.activeChallenge.monthlyPoints || 0) + points;
+
+    let newStreak = state.activeChallenge.streak || 0;
+    if (newDaily === 1 && state.activeChallenge.lastCompletedDay !== dayId) {
+        newStreak++;
+    }
+
+    const hasReward = newMonthly >= 10000 || state.activeChallenge.hasExtraHint;
+
+    const updated = {
+        ...state.activeChallenge,
+        monthlyPoints: newMonthly,
+        streak: newStreak,
+        lastCompletedDay: dayId,
+        dailyCompleted: newDaily,
+        hasExtraHint: hasReward
+    };
+
+    await setDoc(doc(db, "challenges", state.user.sub), updated);
+    await setDoc(doc(db, "dailyChallenges", `${state.user.sub}_${dayId}`), { completed: newDaily });
+
+    state.activeChallenge = updated;
+    renderChallengeUI();
+}
+
+function startRandomChallenge() {
+    const seed = `${state.user.sub}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
+    // Use hash of seed to pick difficulty
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    const difficulties = ["beginner", "intermediate", "expert"];
+    const diff = difficulties[Math.abs(hash) % 3];
+    newGame(diff);
+}
+
+// ----- UI wiring -----
 
 function renderScoreList() {
   const list = state.scores.slice(0, 5);
@@ -671,6 +852,8 @@ function setUser(user) {
     els.userInfo.textContent = `📊 ${user.name || user.email}`;
     els.userInfo.hidden = false;
     if (!previouslySignedIn) mergeLocalScoresIntoUser();
+    loadActiveGame();
+    loadChallenge();
   } else {
     els.signInBtn.textContent = "Sign in";
     els.userInfo.hidden = true;
@@ -678,6 +861,8 @@ function setUser(user) {
       state.unsubscribeScores();
       state.unsubscribeScores = null;
     }
+    state.activeChallenge = null;
+    els.challengeSidebar.hidden = true;
   }
   startScoreListener();
 }
@@ -739,7 +924,9 @@ function init() {
     }
   });
 
-  els.newGameBtn.addEventListener("click", newGame);
+  els.newGameBtn.addEventListener("click", () => newGame());
+  els.startChallengeBtn.addEventListener("click", startRandomChallenge);
+
   els.notesBtn.addEventListener("click", () => {
     state.notesMode = !state.notesMode;
     els.notesBtn.textContent = `Notes: ${state.notesMode ? "on" : "off"}`;
@@ -753,6 +940,7 @@ function init() {
   els.hardMode.addEventListener("change", () => {
     state.hardMode = els.hardMode.checked;
     els.submitBtn.hidden = !state.hardMode;
+    saveGameState();
   });
 
   for (const btn of els.numpad.querySelectorAll(".num")) {
@@ -827,6 +1015,11 @@ function init() {
     refreshHighlights();
     updateNumpad();
   });
+  els.prefShowChallenge.addEventListener("change", () => {
+    state.showChallenge = els.prefShowChallenge.checked;
+    localStorage.setItem("sudoku_showChallenge", state.showChallenge);
+    els.challengeSidebar.hidden = !state.showChallenge || !state.user;
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -841,6 +1034,10 @@ function init() {
   const savedCellFirst = localStorage.getItem("sudoku_cellFirst") === "true";
   state.cellFirstMode = savedCellFirst;
   els.prefCellFirst.checked = savedCellFirst;
+
+  const savedShowChallenge = localStorage.getItem("sudoku_showChallenge") === "true";
+  state.showChallenge = savedShowChallenge;
+  els.prefShowChallenge.checked = savedShowChallenge;
 
   fetch("/version.json")
     .then(r => r.json())

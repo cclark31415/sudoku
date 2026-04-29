@@ -16,6 +16,8 @@ A no-ads, mobile-friendly Sudoku web app. Three difficulties, optional hard mode
 - Scoring: difficulty base + time bonus − mistake/hint penalties
 - Sign in with Google via **Firebase Authentication** to sync scores across devices
 - **Real-time syncing** using Cloud Firestore
+- **Game Persistence**: Switch between phone and desktop mid-game without losing progress
+- **Monthly Challenge**: Toggleable sidebar to track streaks and earn rewards (extra hints)
 - "Buy me a Diet Pepsi" donation links (PayPal + Venmo)
 - Mobile-friendly responsive layout, no framework — easy to wrap with Capacitor for native apps
 
@@ -79,18 +81,24 @@ To set up your own instance of the backend:
 3.  **Firestore Database:**
     - Create a database in "Production mode" or "Test mode".
     - Select a location closest to your users.
-    - Deploy the following **Security Rules** to protect user data:
+    - **Security Rules:** Deploy the following rules in the Firestore Console:
       ```js
       rules_version = '2';
       service cloud.firestore {
         match /databases/{database}/documents {
-          match /scores/{scoreId} {
-            allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-            allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+          // General scores & challenge progress
+          match /{collection}/{id} {
+            allow read, write: if request.auth != null && (
+              id == request.auth.uid || 
+              id.startsWith(request.auth.uid + "_") || 
+              resource.data.userId == request.auth.uid || 
+              request.resource.data.userId == request.auth.uid
+            );
           }
         }
       }
       ```
+    - **Create Composite Index:** Firestore requires an index for the leaderboard query. Create a composite index for the `scores` collection with `userId` (Ascending) and `score` (Descending).
 4.  **Web App Configuration:**
     - Register a new Web App in your Firebase project settings.
     - Copy the `firebaseConfig` object and paste it into the top of `www/app.js`.
