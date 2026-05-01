@@ -42,6 +42,7 @@ I want to plan a Sudoku web app game:
 41. Put a message at the top of the game screen that mentions the daily challenge, how to enable it, and what it is for.  
 42. If the player clicks an X to hide the banner, you do not need to show it again.  
 43. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently.
+44. Don't start the timer or consider the game started until the first tile or note is placed.
 
 ## Android App Migration Plan
 

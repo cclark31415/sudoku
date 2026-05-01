@@ -41,6 +41,7 @@ const state = {
   startTime: 0,
   timerId: null,
   finished: false,
+  gameStarted: false, // Wait for first move to start timer/persistence
   user: null,
   scores: [],
   unsubscribeScores: null,
@@ -202,7 +203,6 @@ function newGame(diff = null) {
   setTimeout(() => {
     const { puzzle, solution } = Sudoku.generatePuzzle(difficulty);
     initGameState(puzzle, solution);
-    saveGameStateImmediately();
   }, 30);
 }
 
@@ -230,6 +230,8 @@ function initGameState(puzzle, solution, savedState = null) {
         state.mistakes = savedState.mistakes;
         state.hintsLeft = savedState.hintsLeft;
         state.startTime = Date.now() - (savedState.elapsed || 0);
+        state.gameStarted = true;
+        startTimer();
     } else {
         state.board = puzzle.map(row => row.slice());
         state.givens = puzzle.map(row => row.map(v => v !== 0));
@@ -237,7 +239,10 @@ function initGameState(puzzle, solution, savedState = null) {
         state.errors = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
         state.mistakes = 0;
         state.hintsLeft = (state.activeChallenge?.hasExtraHint ? 4 : 3);
-        state.startTime = Date.now();
+        state.startTime = 0;
+        state.gameStarted = false;
+        stopTimer();
+        els.timer.textContent = "0:00";
     }
 
     state.selected = null;
@@ -249,8 +254,15 @@ function initGameState(puzzle, solution, savedState = null) {
     els.hintsLeft.textContent = state.hintsLeft;
     els.score.textContent = "—";
     hideMessage();
-    startTimer();
     renderAll();
+}
+
+function startGame() {
+  if (state.gameStarted) return;
+  state.gameStarted = true;
+  state.startTime = Date.now();
+  startTimer();
+  saveGameStateImmediately();
 }
 
 function startTimer() {
@@ -270,13 +282,14 @@ function stopTimer() {
 // ----- Persistence -----
 
 function saveGameState() {
+  if (!state.gameStarted) return;
   if (state.saveTimeout) clearTimeout(state.saveTimeout);
   state.saveTimeout = setTimeout(() => saveGameStateImmediately(), 2000);
 }
 
 async function saveGameStateImmediately() {
   const uid = auth.currentUser?.uid;
-  if (!uid || state.finished || !state.board) return;
+  if (!uid || state.finished || !state.board || !state.gameStarted) return;
 
   const notesMap = {};
   state.notes.flat().forEach((nSet, i) => {
@@ -375,6 +388,9 @@ function applyNumber(r, c, num) {
       for (let cc = 0; cc < SIZE; cc++)
         if (state.board[rr][cc] === num) count++;
     if (count >= 9) return;
+
+    startGame(); // Ensure game is started on first note
+
     if (state.notes[r][c].has(num)) state.notes[r][c].delete(num);
     else state.notes[r][c].add(num);
     renderCell(r, c);
@@ -388,6 +404,8 @@ function applyNumber(r, c, num) {
     for (let cc = 0; cc < SIZE; cc++)
       if (state.board[rr][cc] === num) numCount++;
   if (numCount >= 9) return;
+
+  startGame(); // Ensure game is started on first digit
 
   state.board[r][c] = num;
   state.notes[r][c].clear();
@@ -425,7 +443,7 @@ function removeNotePeers(r, c, num) {
   const br = Math.floor(r / BOX) * BOX;
   const bc = Math.floor(c / BOX) * BOX;
   for (let rr = br; rr < br + BOX; rr++)
-    for (let cc = bc; cc < bc + BOX; cc++)
+    for (let cc = bc; bc < bc + BOX; cc++)
       state.notes[rr][cc].delete(num);
   for (let rr = 0; rr < SIZE; rr++)
     for (let cc = 0; cc < SIZE; cc++)
@@ -549,6 +567,9 @@ function useHint() {
   const correct = state.solution[row][col];
   const wrongNotes = [...noteSet].filter(n => n !== correct);
   if (wrongNotes.length === 0) return;
+
+  startGame(); // Count as started on hint
+
   const toRemove = wrongNotes[Math.floor(Math.random() * wrongNotes.length)];
   noteSet.delete(toRemove);
   state.hintsLeft--;
