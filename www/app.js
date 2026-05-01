@@ -443,7 +443,7 @@ function removeNotePeers(r, c, num) {
   const br = Math.floor(r / BOX) * BOX;
   const bc = Math.floor(c / BOX) * BOX;
   for (let rr = br; rr < br + BOX; rr++)
-    for (let cc = bc; bc < bc + BOX; cc++)
+    for (let cc = bc; cc < bc + BOX; cc++)
       state.notes[rr][cc].delete(num);
   for (let rr = 0; rr < SIZE; rr++)
     for (let cc = 0; cc < SIZE; cc++)
