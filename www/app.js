@@ -415,6 +415,8 @@ function applyNumber(r, c, num) {
 
   startGame(); // Ensure game is started on first digit
 
+  if (state.board[r][c] === num) return;
+
   state.board[r][c] = num;
   state.notes[r][c].clear();
   state.errors[r][c] = false;

@@ -38,6 +38,7 @@ I want to plan a Sudoku web app game:
 37. If the player clicks an X to hide the banner, you do not need to show it again.
 38. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently. 
 39. Don't start the timer or consider the game started until the first tile or note is placed.
+40. If a tile is placed in the wrong spot, clicking on it again will not add another mistake.  Removing it and readding it in the same spot will add another mistake
 
 
 ## Abandoned monthly challenge design
