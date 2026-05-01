@@ -24,7 +24,7 @@ I want to plan a Sudoku web app game:
 23. It needs to be hosted at sudoku.chrisclark.net
 24. This needs to be hooked into GitHub for deployment to azure
 25. Update readme file to document the build and deployment process
-26. Include a stamp at the bottom with the build number and build timestamp on it.  Something subtle, but usable for testing/debugging.  The version should be bumped for each commit with the following versioning rules:  PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes
+26. Include a stamp at the bottom with the build number and build timestamp on it. Something subtle, but usable for testing/debugging. The version should be bumped for each commit with the following versioning rules: PATCH (1.0.1 → 1.0.2): bug fixes, minor tweaks, MINOR (1.0.0 → 1.1.0): new features, MAJOR (1.0.0 → 2.0.0): breaking changes. **Always update the `buildTime` in `version.json` to the current UTC time for every version bump.**
 27. Include the cc.ico favicon
 28. When someone clicks on a number, with notes on or off, it should highlight all of the tiles with that number
 29. On mobile, I should see the game board above the numbers, above the notes, hint, erase buttons, above the timer, above the difficulty selector, above best scores, above the "Enjoying the Game" section.  This is during gameplay, the number buttons should be easily selectable.
