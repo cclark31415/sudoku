@@ -119,7 +119,9 @@ function renderCell(r, c) {
     notes.className = "notes";
     for (let n = 1; n <= 9; n++) {
       const s = document.createElement("span");
-      s.textContent = state.notes[r][c].has(n) ? n : "";
+      const hasNote = state.notes[r][c].has(n);
+      s.textContent = hasNote ? n : "";
+      if (hasNote && n === state.selectedNumber) s.classList.add("highlight");
       notes.appendChild(s);
     }
     el.appendChild(notes);
@@ -143,6 +145,20 @@ function refreshHighlights() {
     for (let c = 0; c < SIZE; c++) {
       const el = cellEl(r, c);
       el.classList.remove("selected", "peer", "same-num");
+
+      // Update note highlighting based on selectedNumber
+      const notesContainer = el.querySelector(".notes");
+      if (notesContainer) {
+        const spans = notesContainer.querySelectorAll("span");
+        spans.forEach((span, idx) => {
+          const num = idx + 1;
+          if (num === state.selectedNumber && span.textContent !== "") {
+            span.classList.add("highlight");
+          } else {
+            span.classList.remove("highlight");
+          }
+        });
+      }
     }
   }
 

@@ -31,18 +31,23 @@ I want to plan a Sudoku web app game:
 30. On mobile, the Notes, hint, erase buttons, and number buttons should be shorter to reduce the amount of vertical space they take up
 31. Oauth may not work in a private window
 32. Make it an option to require clicking a number every time you want to place a tile or note.  Click a cell, then click a number, click a cell, click a number.  This, along with dark/light mode, can be moved into a preferences dialog.
-33. Fix the links to the privacy and TOS documents
-34. I want to come up with a monthly challenge.  Complete 2 puzzles per day of random difficulties and the monthly challenge points are calculated with a fixed amount.  Maybe 100 for beginner, 200 for intermediate, etc. and the score will be doubled for perfect games with no errors and without using hints. 
-35. At the end of the first month, achievement of a reasonable score will grant the user one extra hint per day as long as they keep up a daily streak.  
-36. If the streak is broken the daily hints stop, but after achieving the first month's minimum score, they will also get one automatic streak freeze that allows them to skip one day per month.
-37. We also want to make sure that the state of each game is continuously stored until complete, so if a user is on their phone, they can resume the game on the desktop.
-38. There should be a toggle to show the daily status challenge.  It should not interfere with the verticality of the game board as that is already very crowded.  Perhaps on one side of the board a small section for the daily challenge status.
-39. By default, the user will not see it until they enable it in the preferences.
-40. Put a hint button (a question mark in a circle) next to the "show daily challenge" toggle that explains what it is for.
-41. Put a message at the top of the game screen that mentions the daily challenge, how to enable it, and what it is for.  
-42. If the player clicks an X to hide the banner, you do not need to show it again.  
-43. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently.
-44. Don't start the timer or consider the game started until the first tile or note is placed.
+33. Fix the links to the privacy and TOS documents 
+34. We also want to make sure that the state of each game is continuously stored until complete, so if a user is on their phone, they can resume the game on the desktop. 
+35. Put a hint button (a question mark in a circle) next to the "show daily challenge" toggle that explains what it is for. 
+36. Put a banner at the top of the game screen that can mention new features.  It should only be enabled when there is a message. 
+37. If the player clicks an X to hide the banner, you do not need to show it again.
+38. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently. 
+39. Don't start the timer or consider the game started until the first tile or note is placed.
+
+
+## Abandoned monthly challenge design
+1. I want to come up with a monthly challenge.  Complete 2 puzzles per day of random difficulties and the monthly challenge points are calculated with a fixed amount.  Maybe 100 for beginner, 200 for intermediate, etc. and the score will be doubled for perfect games with no errors and without using hints.
+2. At the end of the first month, achievement of a reasonable score will grant the user one extra hint per day as long as they keep up a daily streak. 
+3. If the streak is broken the daily hints stop, but after achieving the first month's minimum score, they will also get one automatic streak freeze that allows them to skip one day per month.
+4. There should be a toggle to show the daily challenge status.  It should not interfere with the verticality of the game board as that is already very crowded.  Perhaps on one side of the board a small section for the daily challenge status.
+5. By default, the user will not see it until they enable it in the preferences.
+
+
 
 ## Android App Migration Plan
 
