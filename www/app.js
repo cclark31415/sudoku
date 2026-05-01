@@ -518,10 +518,6 @@ function dissolveBoard() {
 // ----- Announcements -----
 
 const ANNOUNCEMENTS = {
-  challenge_intro: {
-    id: "challenge_intro",
-    text: "New: Monthly Challenges! Complete 2 puzzles daily to earn extra hints and keep a streak. Enable it in Preferences (⚙️).",
-  }
 };
 
 function checkAnnouncements() {
