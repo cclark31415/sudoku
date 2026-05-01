@@ -1036,13 +1036,13 @@ function init() {
   state.cellFirstMode = savedCellFirst;
   els.prefCellFirst.checked = savedCellFirst;
 
-  fetch("/version.json")
+  fetch("/version.json?t=" + Date.now())
     .then(r => r.json())
     .then(v => {
       const stamp = document.getElementById("buildStamp");
       const dt = new Date(v.buildTime);
       const timeStr = dt.toLocaleString("en-US", {
-        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short"
+        year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short"
       });
       stamp.textContent = `v${v.version} · ${timeStr}`;
     })
