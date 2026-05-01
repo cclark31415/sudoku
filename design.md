@@ -88,4 +88,5 @@ A middle ground for getting a PWA into the Google Play Store using tools like **
 - **2026-04-26:** Implemented **Cloud Firestore** for remote score storage. Scores now sync in real-time across all devices when a user is logged in. A local-first strategy ensures scores are backed up to the cloud automatically upon the next login if played offline.
 - **2026-04-26:** Added **Real-time Game Persistence**. The state of the current board is saved to Firestore (`activeGames` collection) on every move, allowing users to switch devices seamlessly mid-game.
 - **2026-04-26:** Implemented the **Monthly Challenge System**. Added a toggleable sidebar (via Preferences) that tracks daily goals (2 games), monthly points (10,000 goal), and streaks. Randomized daily challenges are generated uniquely for each user.
+- **2026-04-26:** Improved timer and persistence logic. The game now waits for the first tile or note to be placed before starting the timer and enabling cloud saving, ensuring accurate solve times.
 

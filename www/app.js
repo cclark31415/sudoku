@@ -34,7 +34,6 @@ const state = {
   notesMode: false,
   hardMode: false,
   cellFirstMode: false,
-  showChallenge: false,
   difficulty: "intermediate",
   mistakes: 0,
   hintsLeft: 3,
@@ -45,8 +44,6 @@ const state = {
   user: null,
   scores: [],
   unsubscribeScores: null,
-  activeChallenge: null,
-  isChallengeGame: false,
   saveTimeout: null,
   authInitialized: false,
 };
@@ -76,8 +73,6 @@ const els = {
   prefsClose: document.getElementById("prefsClose"),
   prefTheme: document.getElementById("prefTheme"),
   prefCellFirst: document.getElementById("prefCellFirst"),
-  prefShowChallenge: document.getElementById("prefShowChallenge"),
-  challengeHintBtn: document.getElementById("challengeHintBtn"),
   statsModal: document.getElementById("statsModal"),
   statsClose: document.getElementById("statsClose"),
   statsTitle: document.getElementById("statsTitle"),
@@ -193,11 +188,10 @@ function updateNumpad() {
 
 // ----- Game lifecycle -----
 
-function newGame(diff = null) {
-  const difficulty = diff || els.difficulty.value;
+function newGame() {
+  const difficulty = els.difficulty.value;
   state.difficulty = difficulty;
   state.hardMode = els.hardMode.checked;
-  state.isChallengeGame = !!diff;
 
   showMessage("Generating puzzle…");
   setTimeout(() => {
@@ -238,7 +232,7 @@ function initGameState(puzzle, solution, savedState = null) {
         state.notes = Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => new Set()));
         state.errors = Array.from({ length: SIZE }, () => Array(SIZE).fill(false));
         state.mistakes = 0;
-        state.hintsLeft = (state.activeChallenge?.hasExtraHint ? 4 : 3);
+        state.hintsLeft = 3;
         state.startTime = 0;
         state.gameStarted = false;
         stopTimer();
@@ -308,7 +302,6 @@ async function saveGameStateImmediately() {
     elapsed: Date.now() - state.startTime,
     difficulty: state.difficulty,
     hardMode: state.hardMode,
-    isChallengeGame: state.isChallengeGame,
     updatedAt: serverTimestamp(),
   };
 
@@ -327,7 +320,6 @@ async function loadActiveGame() {
       if (confirm(`Resume your ${data.difficulty} game?`)) {
         state.difficulty = data.difficulty;
         state.hardMode = data.hardMode;
-        state.isChallengeGame = data.isChallengeGame;
 
         const puzzle = [];
         const solution = [];
@@ -620,7 +612,7 @@ async function finishGame() {
   state.finished = true;
   stopTimer();
   const seconds = Math.floor((Date.now() - state.startTime) / 1000);
-  const hintsUsed = (state.activeChallenge?.hasExtraHint ? 4 : 3) - state.hintsLeft;
+  const hintsUsed = 3 - state.hintsLeft;
   const score = computeScore(seconds, state.mistakes, hintsUsed, state.difficulty);
   els.score.textContent = score;
 
@@ -631,12 +623,10 @@ async function finishGame() {
     hintsUsed,
     difficulty: state.difficulty,
     hardMode: state.hardMode,
-    isChallengeGame: state.isChallengeGame,
     when: new Date().toISOString(),
   };
 
   await saveScore(entry);
-  if (state.isChallengeGame) await updateChallengeProgress(entry);
   await clearActiveGame();
 
   setTimeout(() => {
@@ -705,107 +695,6 @@ function startScoreListener() {
     renderScoreList();
   }
 }
-
-// ----- Challenge System -----
-
-async function loadChallenge() {
-  const uid = auth.currentUser?.uid;
-  if (!uid) return;
-  const now = new Date();
-  const monthId = `${now.getFullYear()}_${now.getMonth() + 1}`;
-  const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
-
-  try {
-    const snap = await getDoc(doc(db, "challenges", uid));
-    let data = snap.exists() ? snap.data() : {
-        userId: uid,
-        monthlyPoints: 0,
-        monthId: monthId,
-        streak: 0,
-        lastCompletedDay: null,
-        streakFreezes: 0,
-        hasExtraHint: false
-    };
-
-    if (data.monthId !== monthId) {
-        if (data.monthlyPoints >= 10000) data.streakFreezes = 1;
-        data.monthlyPoints = 0;
-        data.monthId = monthId;
-    }
-
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayId = `${yesterday.getFullYear()}_${yesterday.getMonth() + 1}_${yesterday.getDate()}`;
-
-    if (data.lastCompletedDay && data.lastCompletedDay !== dayId && data.lastCompletedDay !== yesterdayId) {
-        if (data.streakFreezes > 0) {
-            data.streakFreezes--;
-        } else {
-            data.streak = 0;
-            data.hasExtraHint = false;
-        }
-    }
-
-    const daySnap = await getDoc(doc(db, "dailyChallenges", `${uid}_${dayId}`));
-    data.dailyCompleted = daySnap.exists() ? daySnap.data().completed : 0;
-
-    state.activeChallenge = data;
-    renderChallengeUI();
-  } catch (e) { console.error("Challenge load error", e); }
-}
-
-function renderChallengeUI() {
-    if (!state.activeChallenge) return;
-    if (!els.statsModal.hidden) renderStats();
-}
-
-async function updateChallengeProgress(entry) {
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    const now = new Date();
-    const dayId = `${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`;
-    const diffPoints = { beginner: 100, intermediate: 200, expert: 300 }[entry.difficulty];
-    let points = diffPoints;
-    if (entry.mistakes === 0 && entry.hintsUsed === 0) points *= 2;
-
-    const newDaily = Math.min(2, (state.activeChallenge.dailyCompleted || 0) + 1);
-    const newMonthly = (state.activeChallenge.monthlyPoints || 0) + points;
-
-    let newStreak = state.activeChallenge.streak || 0;
-    if (newDaily === 1 && state.activeChallenge.lastCompletedDay !== dayId) {
-        newStreak++;
-    }
-
-    const hasReward = newMonthly >= 10000 || state.activeChallenge.hasExtraHint;
-
-    const updated = {
-        ...state.activeChallenge,
-        userId: uid,
-        monthlyPoints: newMonthly,
-        streak: newStreak,
-        lastCompletedDay: dayId,
-        dailyCompleted: newDaily,
-        hasExtraHint: hasReward
-    };
-
-    await setDoc(doc(db, "challenges", uid), updated);
-    await setDoc(doc(db, "dailyChallenges", `${uid}_${dayId}`), { userId: uid, completed: newDaily });
-
-    state.activeChallenge = updated;
-    renderChallengeUI();
-}
-
-function startRandomChallenge() {
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    const seedString = `${uid}_${new Date().toDateString()}_${state.activeChallenge.dailyCompleted}`;
-    let hash = 0;
-    for (let i = 0; i < seedString.length; i++) hash = ((hash << 5) - hash) + seedString.charCodeAt(i);
-    const difficulties = ["beginner", "intermediate", "expert"];
-    const diff = difficulties[Math.abs(hash) % 3];
-    newGame(diff);
-}
-
-// ----- UI wiring -----
 
 function renderScoreList() {
   const list = state.scores.slice(0, 5);
@@ -878,23 +767,6 @@ function renderStats() {
 
   let html = "";
 
-  if (state.user && state.showChallenge && state.activeChallenge) {
-    const c = state.activeChallenge;
-    const isDone = c.dailyCompleted >= 2;
-    html += `
-      <div class="stats-section challenge-summary">
-        <h3>Monthly Challenge</h3>
-        <div class="stats-grid">
-          <div class="stats-card"><div class="label">Today's Progress</div><div class="value">${c.dailyCompleted} / 2</div></div>
-          <div class="stats-card"><div class="label">Monthly Points</div><div class="value">${(c.monthlyPoints || 0).toLocaleString()}</div></div>
-          <div class="stats-card"><div class="label">Daily Streak</div><div class="value">${c.streak || 0} days</div></div>
-          <div class="stats-card"><div class="label">Extra Hint</div><div class="value">${c.hasExtraHint ? "Active ✅" : "Inactive"}</div></div>
-        </div>
-        ${!isDone ? '<button id="statPlayChallengeBtn" class="btn primary full-width" style="margin-top:10px">Play Daily Challenge</button>' : '<div class="stats-empty">You\'ve met your quota for today!</div>'}
-      </div>
-    `;
-  }
-
   if (!stats) {
     html += '<div class="stats-empty">No games played yet. Solve a puzzle to see your stats!</div>';
   } else {
@@ -926,14 +798,6 @@ function renderStats() {
   }
 
   els.statsBody.innerHTML = html;
-
-  const btn = document.getElementById("statPlayChallengeBtn");
-  if (btn) {
-    btn.onclick = () => {
-      closeStatsModal();
-      startRandomChallenge();
-    };
-  }
 }
 
 function openStatsModal() {
@@ -975,7 +839,6 @@ async function setUser(user) {
     els.userInfo.hidden = false;
     if (!previouslySignedIn) mergeLocalScoresIntoUser();
 
-    await loadChallenge();
     const resumed = await loadActiveGame();
     if (!resumed) newGame();
   } else {
@@ -985,7 +848,6 @@ async function setUser(user) {
       state.unsubscribeScores();
       state.unsubscribeScores = null;
     }
-    state.activeChallenge = null;
     newGame();
   }
   startScoreListener();
@@ -1143,24 +1005,6 @@ function init() {
     refreshHighlights();
     updateNumpad();
   });
-  els.prefShowChallenge.addEventListener("change", () => {
-    state.showChallenge = els.prefShowChallenge.checked;
-    localStorage.setItem("sudoku_showChallenge", state.showChallenge);
-    renderChallengeUI();
-  });
-
-  els.challengeHintBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    alert(
-      "Daily Challenge Rules:\n" +
-      "• Complete 2 random puzzles per day to earn points.\n" +
-      "• Beginner: 100 | Intermediate: 200 | Expert: 300\n" +
-      "• Perfect Game (0 mistakes, 0 hints): Double points!\n" +
-      "• Monthly Goal: 10,000 points.\n" +
-      "• Reward: One extra hint per day for next month + Streak Freeze (allows one missed day per month)."
-    );
-  });
 
   els.closeBanner.addEventListener("click", dismissAnnouncement);
 
@@ -1177,10 +1021,6 @@ function init() {
   const savedCellFirst = localStorage.getItem("sudoku_cellFirst") === "true";
   state.cellFirstMode = savedCellFirst;
   els.prefCellFirst.checked = savedCellFirst;
-
-  const savedShowChallenge = localStorage.getItem("sudoku_showChallenge") === "true";
-  state.showChallenge = savedShowChallenge;
-  els.prefShowChallenge.checked = savedShowChallenge;
 
   fetch("/version.json")
     .then(r => r.json())
