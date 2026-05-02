@@ -241,6 +241,10 @@ html, body {
   color: var(--player);
   cursor: pointer;
   position: relative;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
   transition: background 0.15s;
 }
 .cell.given { color: var(--given); font-weight: 700; }
