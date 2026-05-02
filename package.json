@@ -1,6 +1,6 @@
 {
   "name": "sudoku",
-  "version": "1.7.5",
+  "version": "1.8.1",
   "description": "Sudoku Web & Mobile App",
   "main": "www/index.html",
   "scripts": {
