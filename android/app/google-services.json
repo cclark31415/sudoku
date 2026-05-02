@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "135981766795",
+    "project_id": "sudokufirebase-4649e",
+    "storage_bucket": "sudokufirebase-4649e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:135981766795:android:ed3147f4baf7fe16839c8e",
+        "android_client_info": {
+          "package_name": "com.chrisclark.sudoku"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "135981766795-5n1njrnhnngt68obpnmng96s869h7kgm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.chrisclark.sudoku",
+            "certificate_hash": "92eafca1ce4303e3659fbdab286ad05aedb5a2ea"
+          }
+        },
+        {
+          "client_id": "135981766795-fvl7sempjr4htgcf5fuu9umc11ifg9ns.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4vMHMEhzW5MkYusJXlV8KTP-f2tX9sfw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "135981766795-fvl7sempjr4htgcf5fuu9umc11ifg9ns.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

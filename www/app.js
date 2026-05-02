@@ -1,7 +1,7 @@
 // SIZE and BOX are defined in sudoku.js
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInWithRedirect, getRedirectResult, signInWithCredential } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, onSnapshot, orderBy, limit, setDoc, doc, getDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -898,10 +898,29 @@ async function handleSignIn() {
     return;
   }
 
+  const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+
   try {
-    await signInWithPopup(auth, googleProvider);
+    if (isNative) {
+      // Use the native plugin via the Capacitor global object
+      const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
+      if (!FirebaseAuthentication) throw new Error("FirebaseAuthentication plugin not found");
+
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      const idToken = result.idToken || result.credential?.idToken;
+      if (!idToken) {
+        console.error("Native sign-in result:", result);
+        throw new Error("No ID token returned from native sign-in");
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken);
+      await signInWithCredential(auth, credential);
+    } else {
+      await signInWithPopup(auth, googleProvider);
+    }
   } catch (error) {
-    console.error("Login failed:", error.message);
+    console.error("Login failed:", error);
+    if (error.message && error.message.includes("cancelled")) return;
     const name = prompt("Sign in (local-only fallback). Enter a display name:");
     if (name) {
       setUser({ sub: `local_${name.toLowerCase()}`, name, email: "", idToken: "" });
@@ -915,7 +934,6 @@ function init() {
   buildBoard();
 
   onAuthStateChanged(auth, (user) => {
-    if (state.authInitialized) return;
     state.authInitialized = true;
     if (user) {
       setUser({
@@ -935,8 +953,14 @@ function init() {
     state.notesMode = !state.notesMode;
     els.notesBtn.textContent = `Notes: ${state.notesMode ? "on" : "off"}`;
     els.notesBtn.classList.toggle("active", state.notesMode);
-    state.selected = null;
+
+    if (!state.cellFirstMode) {
+      state.selected = null;
+      state.selectedNumber = 0;
+    }
+
     refreshHighlights();
+    updateNumpad();
   });
   els.hintBtn.addEventListener("click", useHint);
   els.eraseBtn.addEventListener("click", eraseSelected);

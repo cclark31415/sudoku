@@ -1,0 +1,11 @@
+{
+  "appId": "com.chrisclark.sudoku",
+  "appName": "sudoku",
+  "webDir": "www",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com"]
+    }
+  }
+}

@@ -155,6 +155,23 @@ The workflow opens a staging environment for every PR (`build_and_deploy` runs o
 
 The layout is responsive and the board uses `aspect-ratio: 1 / 1`, so it scales cleanly down to phones. To ship as a native app, we use [Capacitor](https://capacitorjs.com/). The project is structured with a `www/` directory to make it easy for Capacitor to wrap the web assets into native iOS/Android projects while keeping the native code separate from the web logic.
 
+### Android Build Instructions
+
+1.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+2.  **Sync web assets to Android:**
+    ```bash
+    npx cap sync android
+    ```
+3.  **Open in Android Studio:**
+    ```bash
+    npx cap open android
+    ```
+4.  **Build/Run:** Use the Run button in Android Studio to deploy to a device or emulator.
+
+
 ## Scoring
 
 ```

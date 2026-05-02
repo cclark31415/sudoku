@@ -39,6 +39,13 @@ I want to plan a Sudoku web app game:
 38. This banner will also be reused for new feature announcements, but the specific messages can be hidden permanently. 
 39. Don't start the timer or consider the game started until the first tile or note is placed.
 40. If a tile is placed in the wrong spot, clicking on it again will not add another mistake.  Removing it and readding it in the same spot will add another mistake
+41. The user should only be allowed to make 3 mistakes for beginner, 4 for intermediate, and 5 for expert.  
+42. The mistakes counter will display the count/total mistakes 
+43. When the game is over, the score should be displayed over the completed game board
+44. Add to the preferences pane that allows the player to share to different social media accounts.  Share to Bluesky and Mastodon initially.
+45. For Mastodon, there is an authentication method where the user enters their server url then the username and password.
+46. Multiple accounts can be stored
+47. When sharing, a 9x9 grid of Emoji numbers along with the difficulty level and the score will be shared.
 
 
 ## Abandoned monthly challenge design
@@ -95,4 +102,6 @@ A middle ground for getting a PWA into the Google Play Store using tools like **
 - **2026-04-26:** Added **Real-time Game Persistence**. The state of the current board is saved to Firestore (`activeGames` collection) on every move, allowing users to switch devices seamlessly mid-game.
 - **2026-04-26:** Implemented the **Monthly Challenge System**. Added a toggleable sidebar (via Preferences) that tracks daily goals (2 games), monthly points (10,000 goal), and streaks. Randomized daily challenges are generated uniquely for each user.
 - **2026-04-26:** Improved timer and persistence logic. The game now waits for the first tile or note to be placed before starting the timer and enabling cloud saving, ensuring accurate solve times.
+- **2026-05-01:** Initialized Capacitor and added the Android platform. Integrated Capacitor Preferences and Haptics plugins to support native mobile features and persistent storage.
+
 
